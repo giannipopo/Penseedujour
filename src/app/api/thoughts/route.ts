@@ -32,10 +32,10 @@ export async function GET(request: Request) {
             include
         });
 
-        const formattedThoughts = thoughts.map(t => ({
+        const formattedThoughts = (thoughts as any[]).map(t => ({
             ...t,
             likeCount: t._count?.likes ?? 0,
-            isLiked: user ? (t.likes && (t.likes as any[]).length > 0) : false
+            isLiked: user ? (t.likes && t.likes.length > 0) : false
         }));
 
         return NextResponse.json(formattedThoughts);

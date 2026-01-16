@@ -8,7 +8,6 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getThoughts(currentUserId?: string) {
-  // On construit l'objet include proprement
   const include: any = {
     user: {
       select: { displayName: true }
@@ -18,7 +17,6 @@ async function getThoughts(currentUserId?: string) {
     }
   };
 
-  // On n'ajoute la vérification du like que si on a un utilisateur
   if (currentUserId) {
     include.likes = {
       where: { userId: currentUserId },
@@ -32,10 +30,10 @@ async function getThoughts(currentUserId?: string) {
     include
   });
 
-  return thoughts.map(thought => ({
+  return (thoughts as any[]).map(thought => ({
     ...thought,
     likeCount: thought._count?.likes ?? 0,
-    isLiked: currentUserId ? (thought.likes && (thought.likes as any[]).length > 0) : false
+    isLiked: currentUserId ? (thought.likes && thought.likes.length > 0) : false
   }));
 }
 
