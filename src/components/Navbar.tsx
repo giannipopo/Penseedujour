@@ -34,7 +34,7 @@ export default async function Navbar() {
                         <div className="flex items-center gap-4 border-l border-border pl-4">
                             <div className="flex items-center gap-2">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-bold">
-                                    {user.displayName[0].toUpperCase()}
+                                    {(user.displayName || "U").charAt(0).toUpperCase()}
                                 </div>
                                 <span className="hidden text-sm font-medium sm:inline">{user.displayName}</span>
                             </div>

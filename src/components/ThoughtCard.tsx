@@ -3,13 +3,15 @@ import { fr } from 'date-fns/locale';
 import { Quote } from 'lucide-react';
 
 interface ThoughtCardProps {
-    displayName: string;
+    displayName: string | null;
     content: string;
     createdAt: string | Date;
 }
 
 export default function ThoughtCard({ displayName, content, createdAt }: ThoughtCardProps) {
     const date = new Date(createdAt);
+    const safeDisplayName = displayName || "Utilisateur";
+    const initial = safeDisplayName.charAt(0).toUpperCase();
 
     return (
         <div className="animate-fade-in group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/50 hover:shadow-md">
@@ -21,9 +23,9 @@ export default function ThoughtCard({ displayName, content, createdAt }: Thought
                 <header className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                            {displayName[0].toUpperCase()}
+                            {initial}
                         </div>
-                        <span className="font-semibold text-foreground">{displayName}</span>
+                        <span className="font-semibold text-foreground">{safeDisplayName}</span>
                     </div>
                     <time className="text-xs text-muted-foreground">
                         {format(date, 'd MMMM yyyy HH:mm', { locale: fr })}
