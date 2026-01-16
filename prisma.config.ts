@@ -6,4 +6,7 @@ export default defineConfig({
         // On essaie les différents noms que Vercel/Neon peuvent donner à la variable
         url: process.env.POSTGRES_URL || process.env.DATABASE_URL,
     },
+    migrations: {
+        seed: 'tsx ./prisma/seed.ts',
+    },
 });

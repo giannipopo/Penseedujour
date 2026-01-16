@@ -26,6 +26,7 @@ Une application web full-stack pour partager votre unique pensée quotidienne.
     Créez un fichier `.env` à la racine (voir `.env.example` ou le contenu généré) :
     ```env
     DATABASE_URL="votre_url_postgres"
+    AUTH_SECRET="un_code_secret_aleatoire"
     DEV_AUTH_USER_ID="dev-user-123"
     DEV_AUTH_DISPLAYNAME="Test User"
     ```

@@ -1,8 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 
+// For Prisma 7 scripts, if ENV is not working, we manually override the connection string
+// via the config function instead of constructor properties if available, 
+// OR we rely on the process sync.
 const prisma = new PrismaClient();
 
 async function main() {
+    console.log("Checking connection...");
     // Create a dev user
     const devUser = await prisma.user.upsert({
         where: { id: 'dev-user-123' },
@@ -11,6 +15,7 @@ async function main() {
             id: 'dev-user-123',
             email: 'dev@example.com',
             displayName: 'Aristote',
+            name: 'Aristote',
         },
     });
 
