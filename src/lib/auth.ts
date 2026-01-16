@@ -25,11 +25,11 @@ export async function getCurrentUser(): Promise<User | null> {
         };
     }
 
-    // 2. DEV_AUTH Fallback: Mock user if configured
+    // 2. DEV_AUTH Fallback: Mock user if configured (Disabled in PROD unless it's real auth)
     const devUserId = process.env.DEV_AUTH_USER_ID;
     const devDisplayName = process.env.DEV_AUTH_DISPLAYNAME;
 
-    if (devUserId && devDisplayName) {
+    if (process.env.NODE_ENV !== 'production' && devUserId && devDisplayName) {
         const user = await prisma.user.upsert({
             where: { id: devUserId },
             update: { displayName: devDisplayName },
