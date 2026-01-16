@@ -35,13 +35,16 @@ export async function GET(request: Request) {
         const formattedThoughts = (thoughts as any[]).map(t => ({
             ...t,
             likeCount: t._count?.likes ?? 0,
-            isLiked: user ? (t.likes && t.likes.length > 0) : false
+            isLiked: user ? (t.likes && Array.isArray(t.likes) && t.likes.length > 0) : false,
+            user: {
+                displayName: t.user?.displayName || "Utilisateur"
+            }
         }));
 
         return NextResponse.json(formattedThoughts);
     } catch (error) {
         console.error('Error fetching thoughts:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json([], { status: 500 });
     }
 }
 

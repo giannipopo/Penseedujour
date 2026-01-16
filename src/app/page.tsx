@@ -3,38 +3,42 @@ import ThoughtCard from '@/components/ThoughtCard';
 import { Sparkles } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 
-// Force dynamic to ensure we get fresh data and don't fail during build
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getThoughts(currentUserId?: string) {
-  const include: any = {
-    user: {
-      select: { displayName: true }
-    },
-    _count: {
-      select: { likes: true }
-    }
-  };
-
-  if (currentUserId) {
-    include.likes = {
-      where: { userId: currentUserId },
-      select: { id: true }
+  try {
+    const include: any = {
+      user: {
+        select: { displayName: true }
+      },
+      _count: {
+        select: { likes: true }
+      }
     };
+
+    if (currentUserId) {
+      include.likes = {
+        where: { userId: currentUserId },
+        select: { id: true }
+      };
+    }
+
+    const thoughts = await prisma.thought.findMany({
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+      include
+    });
+
+    return (thoughts as any[]).map(thought => ({
+      ...thought,
+      likeCount: thought._count?.likes ?? 0,
+      isLiked: currentUserId ? (thought.likes && Array.isArray(thought.likes) && thought.likes.length > 0) : false
+    }));
+  } catch (error) {
+    console.error("Error fetching thoughts:", error);
+    return [];
   }
-
-  const thoughts = await prisma.thought.findMany({
-    take: 50,
-    orderBy: { createdAt: 'desc' },
-    include
-  });
-
-  return (thoughts as any[]).map(thought => ({
-    ...thought,
-    likeCount: thought._count?.likes ?? 0,
-    isLiked: currentUserId ? (thought.likes && thought.likes.length > 0) : false
-  }));
 }
 
 export default async function Home() {
@@ -62,7 +66,7 @@ export default async function Home() {
             <ThoughtCard
               key={thought.id}
               id={thought.id}
-              displayName={thought.user.displayName}
+              displayName={thought.user?.displayName || "Utilisateur"}
               content={thought.content}
               createdAt={thought.createdAt}
               initialLikeCount={thought.likeCount}

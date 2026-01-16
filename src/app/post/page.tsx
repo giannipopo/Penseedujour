@@ -9,32 +9,37 @@ import { LogIn, ArrowLeft } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 async function getUserTodayThought(userId: string) {
-    const dateKey = getDateKeyParis();
-    const thought = await prisma.thought.findUnique({
-        where: {
-            userId_dateKey: {
-                userId,
-                dateKey,
+    try {
+        const dateKey = getDateKeyParis();
+        const thought = await prisma.thought.findUnique({
+            where: {
+                userId_dateKey: {
+                    userId,
+                    dateKey,
+                },
             },
-        },
-        include: {
-            _count: {
-                select: { likes: true }
-            },
-            likes: {
-                where: { userId },
-                select: { id: true }
+            include: {
+                _count: {
+                    select: { likes: true }
+                },
+                likes: {
+                    where: { userId },
+                    select: { id: true }
+                }
             }
-        }
-    });
+        });
 
-    if (!thought) return null;
+        if (!thought) return null;
 
-    return {
-        ...thought,
-        likeCount: thought._count.likes,
-        isLiked: thought.likes.length > 0
-    };
+        return {
+            ...thought,
+            likeCount: (thought as any)._count?.likes ?? 0,
+            isLiked: ((thought as any).likes && Array.isArray((thought as any).likes) && (thought as any).likes.length > 0)
+        };
+    } catch (error) {
+        console.error("Error fetching user today thought:", error);
+        return null;
+    }
 }
 
 export default async function PostPage() {
