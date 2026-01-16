@@ -13,6 +13,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         Resend({
             apiKey: process.env.AUTH_RESEND_KEY || process.env.EMAIL_SERVER_PASSWORD,
             from: process.env.EMAIL_FROM || "onboarding@resend.dev",
+            // On force l'envoi même si le domaine n'est pas vérifié (Resend onboarding)
+            name: "Pensée du Jour",
         }),
     ],
     pages: {
