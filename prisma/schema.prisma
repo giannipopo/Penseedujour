@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String    @id @default(uuid())
+  email       String?   @unique
+  displayName String
+  createdAt   DateTime  @default(now())
+  thoughts    Thought[]
+}
+
+model Thought {
+  id        String   @id @default(uuid())
+  userId    String
+  dateKey   String   // Format: YYYY-MM-DD (Europe/Paris)
+  content   String   @db.VarChar(280)
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dateKey])
+  @@index([createdAt(sort: Desc)])
+}

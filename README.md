@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pensée du Jour 💭
 
-## Getting Started
+Une application web full-stack pour partager votre unique pensée quotidienne.
 
-First, run the development server:
+## Fonctionnalités
+- **Feed Public** : Découvrez les pensées de tous les utilisateurs en temps réel.
+- **Règle Stricte** : Une seule pensée par jour et par utilisateur (basé sur le fuseau horaire Europe/Paris).
+- **Design Premium** : Interface moderne, responsive et fluide avec Tailwind CSS 4.0.
+- **Prêt pour la Prod** : Architecture pensée pour Vercel et Postgres.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Stack Technique
+- **Framework** : Next.js 16 (App Router)
+- **Langage** : TypeScript
+- **Base de données** : PostgreSQL avec Prisma 7
+- **Style** : Tailwind CSS 4
+- **Date** : date-fns & date-fns-tz
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Installation Locale
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1.  **Cloner le dépôt**
+2.  **Installer les dépendances** :
+    ```bash
+    npm install
+    ```
+3.  **Configurer les variables d'environnement** :
+    Créez un fichier `.env` à la racine (voir `.env.example` ou le contenu généré) :
+    ```env
+    DATABASE_URL="votre_url_postgres"
+    DEV_AUTH_USER_ID="dev-user-123"
+    DEV_AUTH_DISPLAYNAME="Test User"
+    ```
+4.  **Initialiser la base de données** :
+    ```bash
+    npm run prisma:migrate
+    npm run prisma:generate
+    npx prisma db seed
+    ```
+5.  **Lancer le serveur de développement** :
+    ```bash
+    npm run dev
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Authentification (MOCK)
+L'application utilise actuellement un mode `DEV_AUTH`. Pour simuler un utilisateur connecté :
+- Modifiez `DEV_AUTH_USER_ID` et `DEV_AUTH_DISPLAYNAME` dans votre `.env`.
+- Le système créera/mettra à jour automatiquement cet utilisateur en base lors du premier appel API.
 
-## Learn More
+### Brancher Auth.js (NextAuth) plus tard :
+1. Installez `next-auth@beta`.
+2. Configurez le handler dans `src/app/api/auth/[...nextauth]/route.ts`.
+3. Mettez à jour `src/lib/auth.ts` pour utiliser `getServerSession` à la place du mock dev.
+4. Ajoutez les providers (Google, GitHub, etc.) dans les options de configuration.
 
-To learn more about Next.js, take a look at the following resources:
+## Déploiement sur Vercel
+1. Poussez votre code sur GitHub/GitLab/Bitbucket.
+2. Créez un nouveau projet sur Vercel.
+3. Ajoutez une base de données **Vercel Postgres**.
+4. Configurez les variables d'environnement (`DATABASE_URL`, `DIRECT_URL`).
+5. Vercel lancera automatiquement `prisma generate` via le script `postinstall` configuré dans `package.json`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts Disponibles
+- `npm run dev` : Lance le serveur de dev.
+- `npm run build` : Compile pour la production.
+- `npm run prisma:migrate` : Crée et applique une migration.
+- `npm run prisma:studio` : Ouvre l'interface Prisma pour explorer la DB.
