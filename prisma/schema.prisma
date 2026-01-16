@@ -19,6 +19,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   thoughts      Thought[]
+  likes         Like[]
 }
 
 model Account {
@@ -64,7 +65,20 @@ model Thought {
   createdAt DateTime @default(now())
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes Like[]
 
   @@unique([userId, dateKey])
   @@index([createdAt(sort: Desc)])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  thoughtId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thought Thought @relation(fields: [thoughtId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, thoughtId])
 }

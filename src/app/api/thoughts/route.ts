@@ -7,6 +7,7 @@ import { getDateKeyParis, validateThoughtContent } from '@/lib/utils';
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
+    const user = await getCurrentUser();
 
     try {
         const thoughts = await prisma.thought.findMany({
@@ -15,11 +16,24 @@ export async function GET(request: Request) {
             include: {
                 user: {
                     select: { displayName: true }
-                }
+                },
+                _count: {
+                    select: { likes: true }
+                },
+                likes: user ? {
+                    where: { userId: user.id },
+                    select: { id: true }
+                } : false
             }
         });
 
-        return NextResponse.json(thoughts);
+        const formattedThoughts = thoughts.map(t => ({
+            ...t,
+            likeCount: t._count.likes,
+            isLiked: user ? (t.likes as any[]).length > 0 : false
+        }));
+
+        return NextResponse.json(formattedThoughts);
     } catch (error) {
         console.error('Error fetching thoughts:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

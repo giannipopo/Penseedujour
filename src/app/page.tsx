@@ -1,25 +1,40 @@
 import prisma from '@/lib/prisma';
 import ThoughtCard from '@/components/ThoughtCard';
 import { Sparkles } from 'lucide-react';
+import { getCurrentUser } from '@/lib/auth';
 
 // Force dynamic to ensure we get fresh data and don't fail during build
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-async function getThoughts() {
-  return await prisma.thought.findMany({
+async function getThoughts(currentUserId?: string) {
+  const thoughts = await prisma.thought.findMany({
     take: 50,
     orderBy: { createdAt: 'desc' },
     include: {
       user: {
         select: { displayName: true }
-      }
+      },
+      _count: {
+        select: { likes: true }
+      },
+      likes: currentUserId ? {
+        where: { userId: currentUserId },
+        select: { id: true }
+      } : false
     }
   });
+
+  return thoughts.map(thought => ({
+    ...thought,
+    likeCount: thought._count.likes,
+    isLiked: currentUserId ? (thought.likes as any[]).length > 0 : false
+  }));
 }
 
 export default async function Home() {
-  const thoughts = await getThoughts();
+  const user = await getCurrentUser();
+  const thoughts = await getThoughts(user?.id);
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-12">
@@ -41,9 +56,13 @@ export default async function Home() {
           thoughts.map((thought: any) => (
             <ThoughtCard
               key={thought.id}
+              id={thought.id}
               displayName={thought.user.displayName}
               content={thought.content}
               createdAt={thought.createdAt}
+              initialLikeCount={thought.likeCount}
+              initialIsLiked={thought.isLiked}
+              isAuthenticated={!!user}
             />
           ))
         ) : (
