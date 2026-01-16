@@ -8,11 +8,11 @@ export default async function Navbar() {
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
-                <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-primary">
-                    <span className="rounded-lg bg-primary/10 p-1.5">
-                        💭
+                <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-white/90">
+                    <span className="rounded-lg bg-yellow-500/20 p-1.5 grayscale-0">
+                        🚀
                     </span>
-                    <span>Pensée du Jour</span>
+                    <span className="bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">Ranko Request</span>
                 </Link>
 
                 <div className="flex items-center gap-4">

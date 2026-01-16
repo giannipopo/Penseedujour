@@ -6,8 +6,8 @@ import Navbar from "@/components/Navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Pensée du Jour",
-  description: "Partagez votre unique pensée chaque jour.",
+  title: "Ranko Request",
+  description: "Plateforme de feedback pour l'application Padel Ranko.",
 };
 
 export default function RootLayout({
@@ -23,7 +23,7 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Pensée du Jour. Tous droits réservés.</p>
+          <p>© {new Date().getFullYear()} Ranko Request. Tous droits réservés.</p>
         </footer>
       </body>
     </html>

@@ -62,7 +62,7 @@ export default async function PostPage() {
                     </div>
                     <h2 className="text-2xl font-bold">Connexion requise</h2>
                     <p className="mt-4 text-muted-foreground">
-                        Vous devez être connecté pour partager votre pensée du jour.
+                        Vous devez être connecté pour partager votre feedback.
                     </p>
                 </div>
             </div>
@@ -81,13 +81,13 @@ export default async function PostPage() {
 
             <header className="mb-10">
                 <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
-                    <span>{count} / 10 pensées aujourd'hui</span>
+                    <span>{count} / 10 feedbacks aujourd'hui</span>
                 </div>
                 <h1 className="text-3xl font-extrabold tracking-tight">
-                    Mes pensées du jour
+                    Mes Feedbacks
                 </h1>
                 <p className="mt-2 text-muted-foreground">
-                    Partagez jusqu'à 10 inspirations par jour.
+                    Partagez jusqu'à 10 avis ou signalements par jour.
                 </p>
             </header>
 
@@ -103,7 +103,7 @@ export default async function PostPage() {
                             <Sparkles className="h-5 w-5" />
                             <span>Limite atteinte !</span>
                         </div>
-                        <p>Tu as déjà partagé 10 pensées aujourd'hui. Reviens demain pour de nouvelles inspirations !</p>
+                        <p>Tu as déjà partagé 10 feedbacks aujourd'hui. Reviens demain !</p>
                     </div>
                 )}
 
@@ -111,7 +111,7 @@ export default async function PostPage() {
                 {thoughts.length > 0 && (
                     <div className="space-y-6">
                         <h3 className="text-lg font-bold flex items-center gap-2">
-                            Mes publications du jour
+                            Mes feedbacks du jour
                         </h3>
                         <div className="flex flex-col gap-6">
                             {thoughts.map((thought) => (

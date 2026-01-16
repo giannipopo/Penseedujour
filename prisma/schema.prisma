@@ -63,6 +63,7 @@ model Thought {
   userId    String
   dateKey   String   // Format: YYYY-MM-DD (Europe/Paris)
   content   String   @db.VarChar(280)
+  category  String   @default("GENERAL") // DESIGN, BUGS, USABILITY
   createdAt DateTime @default(now())
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

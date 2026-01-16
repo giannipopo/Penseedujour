@@ -3,19 +3,28 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { getDateKeyParis, validateThoughtContent } from '@/lib/utils';
 
-// GET /api/thoughts?limit=50
+// GET /api/thoughts?limit=50&category=ALL
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
+    const category = searchParams.get('category') || 'ALL';
     const user = await getCurrentUser();
 
     try {
+        const where: any = {};
+        if (category !== 'ALL') {
+            where.category = category;
+        }
+
         const include: any = {
             user: {
                 select: { displayName: true }
             },
             _count: {
-                select: { likes: true }
+                select: {
+                    likes: true,
+                    comments: true
+                }
             }
         };
 
@@ -27,6 +36,7 @@ export async function GET(request: Request) {
         }
 
         const thoughts = await prisma.thought.findMany({
+            where,
             take: limit,
             orderBy: { createdAt: 'desc' },
             include
@@ -35,6 +45,7 @@ export async function GET(request: Request) {
         const formattedThoughts = (thoughts as any[]).map(t => ({
             ...t,
             likeCount: t._count?.likes ?? 0,
+            commentCount: t._count?.comments ?? 0,
             isLiked: user ? (t.likes && Array.isArray(t.likes) && t.likes.length > 0) : false,
             user: {
                 displayName: t.user?.displayName || "Utilisateur"
@@ -59,6 +70,7 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const content = body.content?.trim();
+        const category = body.category || 'GENERAL';
 
         // Validation contenu
         const validationError = validateThoughtContent(content || '');
@@ -68,7 +80,7 @@ export async function POST(request: Request) {
 
         const dateKey = getDateKeyParis();
 
-        // 1. Vérification que l'utilisateur existe bien en base (protection contre DB reset)
+        // 1. Vérification que l'utilisateur existe bien en base
         const dbUser = await prisma.user.findUnique({
             where: { id: user.id }
         });
@@ -97,6 +109,7 @@ export async function POST(request: Request) {
             data: {
                 userId: user.id,
                 content: content!,
+                category,
                 dateKey,
             },
         });
@@ -104,7 +117,6 @@ export async function POST(request: Request) {
         return NextResponse.json(thought, { status: 201 });
     } catch (error: any) {
         console.error('CRITICAL POST ERROR:', error);
-        // Message d'erreur détaillé pour le debug (sera retiré après)
         return NextResponse.json({
             error: `Erreur serveur: ${error.message || 'Inconnue'}`
         }, { status: 500 });
