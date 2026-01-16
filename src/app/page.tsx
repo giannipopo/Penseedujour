@@ -8,27 +8,34 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getThoughts(currentUserId?: string) {
+  // On construit l'objet include proprement
+  const include: any = {
+    user: {
+      select: { displayName: true }
+    },
+    _count: {
+      select: { likes: true }
+    }
+  };
+
+  // On n'ajoute la vérification du like que si on a un utilisateur
+  if (currentUserId) {
+    include.likes = {
+      where: { userId: currentUserId },
+      select: { id: true }
+    };
+  }
+
   const thoughts = await prisma.thought.findMany({
     take: 50,
     orderBy: { createdAt: 'desc' },
-    include: {
-      user: {
-        select: { displayName: true }
-      },
-      _count: {
-        select: { likes: true }
-      },
-      likes: currentUserId ? {
-        where: { userId: currentUserId },
-        select: { id: true }
-      } : false
-    }
+    include
   });
 
   return thoughts.map(thought => ({
     ...thought,
-    likeCount: thought._count.likes,
-    isLiked: currentUserId ? (thought.likes as any[]).length > 0 : false
+    likeCount: thought._count?.likes ?? 0,
+    isLiked: currentUserId ? (thought.likes && (thought.likes as any[]).length > 0) : false
   }));
 }
 

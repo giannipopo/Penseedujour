@@ -10,27 +10,32 @@ export async function GET(request: Request) {
     const user = await getCurrentUser();
 
     try {
+        const include: any = {
+            user: {
+                select: { displayName: true }
+            },
+            _count: {
+                select: { likes: true }
+            }
+        };
+
+        if (user) {
+            include.likes = {
+                where: { userId: user.id },
+                select: { id: true }
+            };
+        }
+
         const thoughts = await prisma.thought.findMany({
             take: limit,
             orderBy: { createdAt: 'desc' },
-            include: {
-                user: {
-                    select: { displayName: true }
-                },
-                _count: {
-                    select: { likes: true }
-                },
-                likes: user ? {
-                    where: { userId: user.id },
-                    select: { id: true }
-                } : false
-            }
+            include
         });
 
         const formattedThoughts = thoughts.map(t => ({
             ...t,
-            likeCount: t._count.likes,
-            isLiked: user ? (t.likes as any[]).length > 0 : false
+            likeCount: t._count?.likes ?? 0,
+            isLiked: user ? (t.likes && (t.likes as any[]).length > 0) : false
         }));
 
         return NextResponse.json(formattedThoughts);
