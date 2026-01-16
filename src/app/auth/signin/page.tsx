@@ -19,7 +19,7 @@ export default function SignInPage() {
                     action={async (formData) => {
                         "use server"
                         const email = formData.get("email")
-                        await signIn("nodemailer", { email, redirectTo: "/" })
+                        await signIn("resend", { email, redirectTo: "/" })
                     }}
                     className="mt-8 space-y-6"
                 >

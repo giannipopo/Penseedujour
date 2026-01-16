@@ -3,28 +3,21 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import prisma from "@/lib/prisma"
 import GitHub from "next-auth/providers/github"
 import Google from "next-auth/providers/google"
-import Nodemailer from "next-auth/providers/nodemailer"
+import Resend from "next-auth/providers/resend"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(prisma),
     providers: [
         GitHub,
         Google,
-        Nodemailer({
-            server: {
-                host: process.env.EMAIL_SERVER_HOST,
-                port: parseInt(process.env.EMAIL_SERVER_PORT || "587"),
-                auth: {
-                    user: process.env.EMAIL_SERVER_USER,
-                    pass: process.env.EMAIL_SERVER_PASSWORD,
-                },
-            },
-            from: process.env.EMAIL_FROM,
+        Resend({
+            apiKey: process.env.AUTH_RESEND_KEY || process.env.EMAIL_SERVER_PASSWORD,
+            from: process.env.EMAIL_FROM || "onboarding@resend.dev",
         }),
     ],
     pages: {
         signIn: '/auth/signin',
-        error: '/auth/error', // On ajoute une page d'erreur pour mieux comprendre
+        error: '/auth/error',
     },
     callbacks: {
         async session({ session, user }) {
@@ -36,7 +29,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return session;
         },
     },
-    // Autoriser les domaines de Vercel
     trustHost: true,
     secret: process.env.AUTH_SECRET,
 })
