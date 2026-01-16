@@ -10,14 +10,31 @@ export const dynamic = 'force-dynamic';
 
 async function getUserTodayThought(userId: string) {
     const dateKey = getDateKeyParis();
-    return await prisma.thought.findUnique({
+    const thought = await prisma.thought.findUnique({
         where: {
             userId_dateKey: {
                 userId,
                 dateKey,
             },
         },
+        include: {
+            _count: {
+                select: { likes: true }
+            },
+            likes: {
+                where: { userId },
+                select: { id: true }
+            }
+        }
     });
+
+    if (!thought) return null;
+
+    return {
+        ...thought,
+        likeCount: thought._count.likes,
+        isLiked: thought.likes.length > 0
+    };
 }
 
 export default async function PostPage() {
@@ -69,9 +86,13 @@ export default async function PostPage() {
                         <p className="text-sm opacity-80">Reviens demain pour une nouvelle inspiration !</p>
                     </div>
                     <ThoughtCard
+                        id={todayThought.id}
                         displayName={user.displayName}
                         content={todayThought.content}
                         createdAt={todayThought.createdAt}
+                        initialLikeCount={todayThought.likeCount}
+                        initialIsLiked={todayThought.isLiked}
+                        isAuthenticated={true}
                     />
                 </div>
             ) : (
