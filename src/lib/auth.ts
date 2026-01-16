@@ -9,8 +9,8 @@ export interface User {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-    // SÉCURITÉ BUILD : Si on est en train de compiler sur Vercel, on ignore l'auth
-    if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.VERCEL_ENV === 'production' && !process.env.DATABASE_URL) {
+    // BLINDAGE ULTIME : Si on est en phase de build statique, on ne touche à rien
+    if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.IS_BUILD === 'true') {
         return null;
     }
 
@@ -27,7 +27,7 @@ export async function getCurrentUser(): Promise<User | null> {
             };
         }
 
-        // 2. DEV_AUTH Fallback (Uniquement en local)
+        // 2. DEV_AUTH Fallback (Uniquement en local / development)
         if (process.env.NODE_ENV === 'development') {
             const devUserId = process.env.DEV_AUTH_USER_ID;
             const devDisplayName = process.env.DEV_AUTH_DISPLAYNAME;
@@ -52,8 +52,10 @@ export async function getCurrentUser(): Promise<User | null> {
             }
         }
     } catch (error) {
-        // En cas d'erreur (surtout pendant le build), on ne fait pas planter le site
-        console.warn("Auth check skipped or failed during build/runtime:", error);
+        // Silencieux pendant le build, bruyant pendant le runtime
+        if (process.env.NODE_ENV !== 'production') {
+            console.error("Auth check failed:", error);
+        }
         return null;
     }
 

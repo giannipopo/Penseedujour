@@ -1,15 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 
-const prismaClientSingleton = () => {
-  return new PrismaClient();
-};
+let prisma: PrismaClient;
 
-declare global {
-  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
+if (process.env.NODE_ENV === 'production') {
+  prisma = new PrismaClient();
+} else {
+  // En dev, on utilise une variable globale pour éviter de saturer les connexions avec le "Hot Reload"
+  if (!(global as any).prisma) {
+    (global as any).prisma = new PrismaClient();
+  }
+  prisma = (global as any).prisma;
 }
 
-const prisma = globalThis.prisma ?? prismaClientSingleton();
-
 export default prisma;
-
-if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma;
