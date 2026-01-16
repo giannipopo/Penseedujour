@@ -6,6 +6,8 @@ import { Quote, Heart } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import CommentSection from './CommentSection';
+
 interface ThoughtCardProps {
     id: string;
     displayName: string | null;
@@ -14,6 +16,7 @@ interface ThoughtCardProps {
     initialLikeCount: number;
     initialIsLiked: boolean;
     isAuthenticated: boolean;
+    initialCommentCount: number;
 }
 
 export default function ThoughtCard({
@@ -23,7 +26,8 @@ export default function ThoughtCard({
     createdAt,
     initialLikeCount,
     initialIsLiked,
-    isAuthenticated
+    isAuthenticated,
+    initialCommentCount,
 }: ThoughtCardProps) {
     const router = useRouter();
     const date = new Date(createdAt);
@@ -90,22 +94,30 @@ export default function ThoughtCard({
                     "{content}"
                 </p>
 
-                <footer className="mt-2 flex items-center justify-between">
-                    <button
-                        onClick={handleLike}
-                        disabled={isLiking}
-                        className={`group/heart flex items-center gap-1.5 transition-all active:scale-90 ${isLiked ? 'text-rose-500' : 'text-muted-foreground hover:text-rose-400'
-                            }`}
-                    >
-                        <div className={`rounded-full p-2 transition-colors ${isLiked ? 'bg-rose-500/10' : 'group-hover/heart:bg-rose-500/10'
-                            }`}>
-                            <Heart
-                                size={18}
-                                className={isLiked ? 'fill-current' : ''}
-                            />
-                        </div>
-                        <span className="text-sm font-medium">{likeCount}</span>
-                    </button>
+                <footer className="mt-2">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={handleLike}
+                            disabled={isLiking}
+                            className={`group/heart flex items-center gap-1.5 transition-all active:scale-90 ${isLiked ? 'text-rose-500' : 'text-muted-foreground hover:text-rose-400'
+                                }`}
+                        >
+                            <div className={`rounded-full p-2 transition-colors ${isLiked ? 'bg-rose-500/10' : 'group-hover/heart:bg-rose-500/10'
+                                }`}>
+                                <Heart
+                                    size={18}
+                                    className={isLiked ? 'fill-current' : ''}
+                                />
+                            </div>
+                            <span className="text-sm font-medium">{likeCount}</span>
+                        </button>
+                    </div>
+
+                    <CommentSection
+                        thoughtId={id}
+                        isAuthenticated={isAuthenticated}
+                        initialCommentCount={initialCommentCount}
+                    />
                 </footer>
             </div>
         </div>

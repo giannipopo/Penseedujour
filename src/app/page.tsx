@@ -13,7 +13,10 @@ async function getThoughts(currentUserId?: string) {
         select: { displayName: true }
       },
       _count: {
-        select: { likes: true }
+        select: {
+          likes: true,
+          comments: true
+        }
       }
     };
 
@@ -33,6 +36,7 @@ async function getThoughts(currentUserId?: string) {
     return (thoughts as any[]).map(thought => ({
       ...thought,
       likeCount: thought._count?.likes ?? 0,
+      commentCount: thought._count?.comments ?? 0,
       isLiked: currentUserId ? (thought.likes && Array.isArray(thought.likes) && thought.likes.length > 0) : false
     }));
   } catch (error) {
@@ -72,6 +76,7 @@ export default async function Home() {
               initialLikeCount={thought.likeCount}
               initialIsLiked={thought.isLiked}
               isAuthenticated={!!user}
+              initialCommentCount={thought.commentCount}
             />
           ))
         ) : (
