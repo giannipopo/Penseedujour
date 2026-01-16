@@ -11,13 +11,15 @@ export async function GET() {
 
     try {
         const today = getDateKeyParis();
-        const thought = await prisma.thought.findUnique({
+        // Since we can have multiple thoughts, we fetch the latest one for today
+        const thought = await prisma.thought.findFirst({
             where: {
-                userId_dateKey: {
-                    userId: user.id,
-                    dateKey: today,
-                },
+                userId: user.id,
+                dateKey: today,
             },
+            orderBy: {
+                createdAt: 'desc'
+            }
         });
 
         return NextResponse.json(thought);

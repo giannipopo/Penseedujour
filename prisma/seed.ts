@@ -1,8 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 
-// For Prisma 7 scripts, if ENV is not working, we manually override the connection string
-// via the config function instead of constructor properties if available, 
-// OR we rely on the process sync.
 const prisma = new PrismaClient();
 
 async function main() {
@@ -38,16 +35,19 @@ async function main() {
     ];
 
     for (const t of thoughts) {
-        await prisma.thought.upsert({
+        // Since userId_dateKey is no longer unique, we check by content to avoid doubles in seed
+        const existing = await prisma.thought.findFirst({
             where: {
-                userId_dateKey: {
-                    userId: t.userId,
-                    dateKey: t.dateKey,
-                },
-            },
-            update: {},
-            create: t,
+                userId: t.userId,
+                content: t.content
+            }
         });
+
+        if (!existing) {
+            await prisma.thought.create({
+                data: t,
+            });
+        }
     }
 
     console.log('Seed completed.');
