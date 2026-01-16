@@ -2,8 +2,9 @@ import prisma from '@/lib/prisma';
 import ThoughtCard from '@/components/ThoughtCard';
 import { Sparkles } from 'lucide-react';
 
-// Force dynamic to ensure we get fresh data
+// Force dynamic to ensure we get fresh data and don't fail during build
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 async function getThoughts() {
   return await prisma.thought.findMany({
