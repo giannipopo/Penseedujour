@@ -8,9 +8,8 @@ import Nodemailer from "next-auth/providers/nodemailer"
 export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(prisma),
     providers: [
-        // On n'active les providers que si les clés sont présentes pour éviter les erreurs 500
-        ...(process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET ? [GitHub] : []),
-        ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET ? [Google] : []),
+        GitHub,
+        Google,
         Nodemailer({
             server: {
                 host: process.env.EMAIL_SERVER_HOST,
@@ -24,7 +23,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }),
     ],
     pages: {
-        signIn: '/auth/signin', // On va créer une page personnalisée pour plus de contrôle
+        signIn: '/auth/signin',
+        error: '/auth/error', // On ajoute une page d'erreur pour mieux comprendre
     },
     callbacks: {
         async session({ session, user }) {
@@ -36,6 +36,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return session;
         },
     },
-    // Très important pour Vercel
+    // Autoriser les domaines de Vercel
     trustHost: true,
+    secret: process.env.AUTH_SECRET,
 })
