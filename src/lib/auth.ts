@@ -9,11 +9,6 @@ export interface User {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-    // BLINDAGE ULTIME : Si on est en phase de build statique, on ne touche à rien
-    if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.IS_BUILD === 'true') {
-        return null;
-    }
-
     try {
         // 1. Check for real session (Auth.js)
         const session = await auth();
@@ -27,7 +22,7 @@ export async function getCurrentUser(): Promise<User | null> {
             };
         }
 
-        // 2. DEV_AUTH Fallback (Uniquement en local / development)
+        // 2. DEV_AUTH Fallback (Uniquement en local)
         if (process.env.NODE_ENV === 'development') {
             const devUserId = process.env.DEV_AUTH_USER_ID;
             const devDisplayName = process.env.DEV_AUTH_DISPLAYNAME;
@@ -52,10 +47,7 @@ export async function getCurrentUser(): Promise<User | null> {
             }
         }
     } catch (error) {
-        // Silencieux pendant le build, bruyant pendant le runtime
-        if (process.env.NODE_ENV !== 'production') {
-            console.error("Auth check failed:", error);
-        }
+        console.error("Auth check failed:", error);
         return null;
     }
 

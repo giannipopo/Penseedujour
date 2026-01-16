@@ -50,7 +50,7 @@ export default async function Navbar() {
                         </div>
                     ) : (
                         <Link
-                            href="/api/auth/signin"
+                            href="/auth/signin"
                             className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
                         >
                             Se connecter
