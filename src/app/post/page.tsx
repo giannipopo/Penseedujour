@@ -23,7 +23,10 @@ async function getUserTodayState(userId: string) {
             },
             include: {
                 _count: {
-                    select: { likes: true }
+                    select: {
+                        likes: true,
+                        comments: true
+                    }
                 },
                 likes: {
                     where: { userId },
@@ -37,6 +40,7 @@ async function getUserTodayState(userId: string) {
             thoughts: thoughts.map(t => ({
                 ...t,
                 likeCount: (t as any)._count?.likes ?? 0,
+                commentCount: (t as any)._count?.comments ?? 0,
                 isLiked: ((t as any).likes && Array.isArray((t as any).likes) && (t as any).likes.length > 0)
             }))
         };
@@ -120,6 +124,7 @@ export default async function PostPage() {
                                     initialLikeCount={thought.likeCount}
                                     initialIsLiked={thought.isLiked}
                                     isAuthenticated={true}
+                                    initialCommentCount={thought.commentCount}
                                 />
                             ))}
                         </div>
