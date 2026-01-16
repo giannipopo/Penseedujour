@@ -4,6 +4,7 @@ import prisma from "./prisma";
 export interface User {
     id: string;
     email: string | null;
+    name: string | null;
     displayName: string;
 }
 
@@ -19,6 +20,7 @@ export async function getCurrentUser(): Promise<User | null> {
         return {
             id: session.user.id!,
             email: session.user.email ?? null,
+            name: session.user.name ?? null,
             displayName: (session.user as any).displayName || session.user.name || "Utilisateur",
         };
     }
@@ -34,7 +36,6 @@ export async function getCurrentUser(): Promise<User | null> {
             create: {
                 id: devUserId,
                 displayName: devDisplayName,
-                name: devDisplayName,
                 email: 'dev@example.com',
             },
         });
@@ -42,7 +43,8 @@ export async function getCurrentUser(): Promise<User | null> {
         return {
             id: user.id,
             email: user.email,
-            displayName: user.displayName || user.name || "Dev User",
+            name: null,
+            displayName: user.displayName || "Dev User",
         };
     }
 
