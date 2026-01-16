@@ -59,7 +59,7 @@ export async function POST(request: Request) {
         const body = await request.json();
         const content = body.content?.trim();
 
-        // Validation
+        // Validation contenu
         const validationError = validateThoughtContent(content || '');
         if (validationError) {
             return NextResponse.json({ error: validationError }, { status: 400 });
@@ -67,7 +67,23 @@ export async function POST(request: Request) {
 
         const dateKey = getDateKeyParis();
 
-        // Create thought with unique constraint handling
+        // 1. Compter les pensées de l'utilisateur pour aujourd'hui
+        const todayCount = await prisma.thought.count({
+            where: {
+                userId: user.id,
+                dateKey: dateKey
+            }
+        });
+
+        // 2. Limite de 10 pensées par jour
+        if (todayCount >= 10) {
+            return NextResponse.json(
+                { error: 'Tu as atteint la limite de 10 pensées pour aujourd\'hui.' },
+                { status: 429 }
+            );
+        }
+
+        // 3. Création
         const thought = await prisma.thought.create({
             data: {
                 userId: user.id,
@@ -78,14 +94,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json(thought, { status: 201 });
     } catch (error: any) {
-        // Prisma P2002 is Unique constraint failed
-        if (error.code === 'P2002') {
-            return NextResponse.json(
-                { error: 'Tu as déjà posté ta pensée du jour.' },
-                { status: 409 }
-            );
-        }
         console.error('Error creating thought:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: 'Une erreur est survenue lors de la création.' }, { status: 500 });
     }
 }

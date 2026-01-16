@@ -4,19 +4,22 @@ import { getDateKeyParis } from '@/lib/utils';
 import ThoughtForm from '@/components/ThoughtForm';
 import ThoughtCard from '@/components/ThoughtCard';
 import Link from 'next/link';
-import { LogIn, ArrowLeft } from 'lucide-react';
+import { LogIn, ArrowLeft, Sparkles } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-async function getUserTodayThought(userId: string) {
+async function getUserTodayState(userId: string) {
     try {
         const dateKey = getDateKeyParis();
-        const thought = await prisma.thought.findUnique({
+
+        // On récupère toutes les pensées du jour pour cet utilisateur
+        const thoughts = await prisma.thought.findMany({
             where: {
-                userId_dateKey: {
-                    userId,
-                    dateKey,
-                },
+                userId,
+                dateKey,
+            },
+            orderBy: {
+                createdAt: 'desc'
             },
             include: {
                 _count: {
@@ -29,16 +32,17 @@ async function getUserTodayThought(userId: string) {
             }
         });
 
-        if (!thought) return null;
-
         return {
-            ...thought,
-            likeCount: (thought as any)._count?.likes ?? 0,
-            isLiked: ((thought as any).likes && Array.isArray((thought as any).likes) && (thought as any).likes.length > 0)
+            count: thoughts.length,
+            thoughts: thoughts.map(t => ({
+                ...t,
+                likeCount: (t as any)._count?.likes ?? 0,
+                isLiked: ((t as any).likes && Array.isArray((t as any).likes) && (t as any).likes.length > 0)
+            }))
         };
     } catch (error) {
         console.error("Error fetching user today thought:", error);
-        return null;
+        return { count: 0, thoughts: [] };
     }
 }
 
@@ -56,55 +60,72 @@ export default async function PostPage() {
                     <p className="mt-4 text-muted-foreground">
                         Vous devez être connecté pour partager votre pensée du jour.
                     </p>
-                    <div className="mt-8 flex flex-col gap-3">
-                        <div className="p-4 rounded-lg bg-yellow-50 text-yellow-800 text-sm border border-yellow-100 dark:bg-yellow-900/10 dark:text-yellow-500 dark:border-yellow-900/30">
-                            Note: En mode développement, assurez-vous de configurer <code>DEV_AUTH_USER_ID</code> dans votre fichier .env
-                        </div>
-                    </div>
                 </div>
             </div>
         );
     }
 
-    const todayThought = await getUserTodayThought(user.id);
+    const { count, thoughts } = await getUserTodayState(user.id);
+    const canPost = count < 10;
 
     return (
         <div className="container mx-auto max-w-xl px-4 py-12">
             <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="h-4 w-4" />
-                Retour au feed
+                Retour au flux
             </Link>
 
             <header className="mb-10">
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+                    <span>{count} / 10 pensées aujourd'hui</span>
+                </div>
                 <h1 className="text-3xl font-extrabold tracking-tight">
-                    Ma pensée du jour
+                    Mes pensées du jour
                 </h1>
                 <p className="mt-2 text-muted-foreground">
-                    Partagez une inspiration, un moment ou une idée. Une seule fois par jour.
+                    Partagez jusqu'à 10 inspirations par jour.
                 </p>
             </header>
 
-            {todayThought ? (
-                <div className="flex flex-col gap-6">
-                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-800 dark:border-blue-900/30 dark:bg-blue-900/10 dark:text-blue-400">
-                        <p className="font-medium">Tu as déjà posté ta pensée du jour.</p>
-                        <p className="text-sm opacity-80">Reviens demain pour une nouvelle inspiration !</p>
+            <div className="space-y-12">
+                {/* Formulaire - s'affiche s'il reste des quotas */}
+                {canPost ? (
+                    <div className="rounded-2xl border border-border bg-card p-6 shadow-xl sm:p-8">
+                        <ThoughtForm />
                     </div>
-                    <ThoughtCard
-                        id={todayThought.id}
-                        displayName={user.displayName}
-                        content={todayThought.content}
-                        createdAt={todayThought.createdAt}
-                        initialLikeCount={todayThought.likeCount}
-                        initialIsLiked={todayThought.isLiked}
-                        isAuthenticated={true}
-                    />
-                </div>
-            ) : (
-                <div className="rounded-2xl border border-border bg-card p-6 shadow-xl sm:p-8">
-                    <ThoughtForm />
-                </div>
-            )}
+                ) : (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 text-blue-800 dark:border-blue-900/30 dark:bg-blue-900/10 dark:text-blue-400">
+                        <div className="flex items-center gap-2 mb-2 font-bold">
+                            <Sparkles className="h-5 w-5" />
+                            <span>Limite atteinte !</span>
+                        </div>
+                        <p>Tu as déjà partagé 10 pensées aujourd'hui. Reviens demain pour de nouvelles inspirations !</p>
+                    </div>
+                )}
+
+                {/* Historique du jour */}
+                {thoughts.length > 0 && (
+                    <div className="space-y-6">
+                        <h3 className="text-lg font-bold flex items-center gap-2">
+                            Mes publications du jour
+                        </h3>
+                        <div className="flex flex-col gap-6">
+                            {thoughts.map((thought) => (
+                                <ThoughtCard
+                                    key={thought.id}
+                                    id={thought.id}
+                                    displayName={user.displayName}
+                                    content={thought.content}
+                                    createdAt={thought.createdAt}
+                                    initialLikeCount={thought.likeCount}
+                                    initialIsLiked={thought.isLiked}
+                                    isAuthenticated={true}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

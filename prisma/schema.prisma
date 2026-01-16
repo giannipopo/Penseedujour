@@ -67,7 +67,7 @@ model Thought {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   likes Like[]
 
-  @@unique([userId, dateKey])
+  @@index([userId, dateKey])
   @@index([createdAt(sort: Desc)])
 }
 
