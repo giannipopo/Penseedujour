@@ -1,8 +1,9 @@
 "use client";
 
+// ... imports
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Quote, Heart } from 'lucide-react';
+import { Quote, Heart, ShieldAlert, Trash2, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -17,6 +18,8 @@ interface ThoughtCardProps {
     initialIsLiked: boolean;
     isAuthenticated: boolean;
     initialCommentCount: number;
+    userRole?: string; // "ADMIN" | "USER"
+    isHidden?: boolean;
 }
 
 export default function ThoughtCard({
@@ -28,6 +31,8 @@ export default function ThoughtCard({
     initialIsLiked,
     isAuthenticated,
     initialCommentCount,
+    userRole = "USER",
+    isHidden = false,
 }: ThoughtCardProps) {
     const router = useRouter();
     const date = new Date(createdAt);
@@ -37,6 +42,7 @@ export default function ThoughtCard({
     const [isLiked, setIsLiked] = useState(initialIsLiked);
     const [likeCount, setLikeCount] = useState(initialLikeCount);
     const [isLiking, setIsLiking] = useState(false);
+    const [hidden, setHidden] = useState(isHidden);
 
     const handleLike = async () => {
         if (!isAuthenticated) {
@@ -47,23 +53,17 @@ export default function ThoughtCard({
         if (isLiking) return;
 
         setIsLiking(true);
-        // Optimistic UI
         const newIsLiked = !isLiked;
         setIsLiked(newIsLiked);
         setLikeCount(prev => newIsLiked ? prev + 1 : prev - 1);
 
         try {
-            const res = await fetch(`/api/thoughts/${id}/like`, {
-                method: 'POST',
-            });
-
+            const res = await fetch(`/api/thoughts/${id}/like`, { method: 'POST' });
             if (!res.ok) {
-                // Rollback if failed
                 setIsLiked(!newIsLiked);
                 setLikeCount(prev => !newIsLiked ? prev + 1 : prev - 1);
             }
         } catch (error) {
-            // Rollback if failed
             setIsLiked(!newIsLiked);
             setLikeCount(prev => !newIsLiked ? prev + 1 : prev - 1);
         } finally {
@@ -71,8 +71,34 @@ export default function ThoughtCard({
         }
     };
 
+    const handleModerate = async (action: 'hide' | 'delete') => {
+        if (!confirm(`Etes-vous sûr de vouloir ${action === 'hide' ? 'masquer' : 'supprimer'} ce feedback ?`)) return;
+
+        try {
+            const res = await fetch(`/api/thoughts/${id}/moderate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+            });
+
+            if (res.ok) {
+                if (action === 'delete') {
+                    router.refresh();
+                } else {
+                    setHidden(!hidden);
+                }
+            } else {
+                alert("Erreur lors de la modération.");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    if (hidden && userRole !== 'ADMIN') return null;
+
     return (
-        <div className="animate-fade-in group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/50 hover:shadow-md">
+        <div className={`animate-fade-in group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md ${hidden ? 'border-red-200 bg-red-50 opacity-75' : 'border-border'}`}>
             <div className="absolute -right-4 -top-4 text-primary/5 transition-transform group-hover:scale-110 pointer-events-none">
                 <Quote size={80} />
             </div>
@@ -84,10 +110,25 @@ export default function ThoughtCard({
                             {initialChar}
                         </div>
                         <span className="font-semibold text-foreground">{safeDisplayName}</span>
+                        {hidden && <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full ml-2">MASQUÉ</span>}
                     </div>
-                    <time className="text-[10px] text-muted-foreground">
-                        {format(date, 'd MMMM HH:mm', { locale: fr })}
-                    </time>
+
+                    <div className="flex items-center gap-2">
+                        <time className="text-[10px] text-muted-foreground hidden sm:block">
+                            {format(date, 'd MMMM HH:mm', { locale: fr })}
+                        </time>
+
+                        {userRole === 'ADMIN' && (
+                            <div className="flex items-center gap-1 ml-2">
+                                <button onClick={() => handleModerate('hide')} className="p-1 text-muted-foreground hover:text-orange-500 transition-colors" title={hidden ? "Afficher" : "Masquer"}>
+                                    <EyeOff size={16} />
+                                </button>
+                                <button onClick={() => handleModerate('delete')} className="p-1 text-muted-foreground hover:text-red-500 transition-colors" title="Supprimer">
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </header>
 
                 <p className="text-lg leading-relaxed text-foreground/90 whitespace-pre-wrap italic">

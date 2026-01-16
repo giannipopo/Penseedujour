@@ -59,8 +59,18 @@ interface HomeProps {
 
 export default async function Home({ searchParams }: HomeProps) {
   const { category = 'ALL' } = await searchParams;
-  const user = await getCurrentUser();
-  const thoughts = await getThoughts(user?.id, category);
+  const sessionUser = await getCurrentUser();
+
+  let userRole = 'USER';
+  if (sessionUser) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: sessionUser.id },
+      select: { role: true }
+    });
+    userRole = dbUser?.role || 'USER';
+  }
+
+  const thoughts = await getThoughts(sessionUser?.id, category);
 
   const tabs = [
     { id: 'ALL', label: 'Tout' },
@@ -111,8 +121,10 @@ export default async function Home({ searchParams }: HomeProps) {
               createdAt={thought.createdAt}
               initialLikeCount={thought.likeCount}
               initialIsLiked={thought.isLiked}
-              isAuthenticated={!!user}
+              isAuthenticated={!!sessionUser}
               initialCommentCount={thought.commentCount}
+              userRole={userRole}
+              isHidden={thought.isHidden}
             />
           ))
         ) : (
