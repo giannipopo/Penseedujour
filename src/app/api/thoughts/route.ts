@@ -51,8 +51,9 @@ export async function GET(request: Request) {
 // POST /api/thoughts
 export async function POST(request: Request) {
     const user = await getCurrentUser();
+
     if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return NextResponse.json({ error: 'Session absente ou expirée. Déconnecte-toi et reconnecte-toi.' }, { status: 401 });
     }
 
     try {
@@ -67,7 +68,16 @@ export async function POST(request: Request) {
 
         const dateKey = getDateKeyParis();
 
-        // 1. Compter les pensées de l'utilisateur pour aujourd'hui
+        // 1. Vérification que l'utilisateur existe bien en base (protection contre DB reset)
+        const dbUser = await prisma.user.findUnique({
+            where: { id: user.id }
+        });
+
+        if (!dbUser) {
+            return NextResponse.json({ error: 'Profil introuvable en base. Déconnecte-toi et reconnecte-toi.' }, { status: 403 });
+        }
+
+        // 2. Compter les pensées pour aujourd'hui
         const todayCount = await prisma.thought.count({
             where: {
                 userId: user.id,
@@ -75,10 +85,9 @@ export async function POST(request: Request) {
             }
         });
 
-        // 2. Limite de 10 pensées par jour
         if (todayCount >= 10) {
             return NextResponse.json(
-                { error: 'Tu as atteint la limite de 10 pensées pour aujourd\'hui.' },
+                { error: 'Limite quotidienne (10) atteinte.' },
                 { status: 429 }
             );
         }
@@ -94,7 +103,10 @@ export async function POST(request: Request) {
 
         return NextResponse.json(thought, { status: 201 });
     } catch (error: any) {
-        console.error('Error creating thought:', error);
-        return NextResponse.json({ error: 'Une erreur est survenue lors de la création.' }, { status: 500 });
+        console.error('CRITICAL POST ERROR:', error);
+        // Message d'erreur détaillé pour le debug (sera retiré après)
+        return NextResponse.json({
+            error: `Erreur serveur: ${error.message || 'Inconnue'}`
+        }, { status: 500 });
     }
 }
