@@ -13,16 +13,23 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { winnerId } = body;
+        const { winnerId, winnerIds } = body;
 
-        if (!winnerId) {
-            return NextResponse.json({ error: 'Winner ID is required' }, { status: 400 });
+        // Determine list of winners
+        let winners: string[] = [];
+        if (winnerIds && Array.isArray(winnerIds)) {
+            winners = winnerIds;
+        } else if (winnerId) {
+            winners = [winnerId];
         }
 
-        // Increment score for the winner
-        // We do not decrement for the loser based on user instructions ("attribuer +1 au gagnant")
-        const winner = await prisma.user.update({
-            where: { id: winnerId },
+        if (winners.length === 0) {
+            return NextResponse.json({ error: 'Winner ID(s) required' }, { status: 400 });
+        }
+
+        // Increment score for all winners
+        const result = await prisma.user.updateMany({
+            where: { id: { in: winners } },
             data: {
                 score: { increment: 1 }
             }
@@ -30,8 +37,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
             success: true,
-            winnerName: winner.displayName,
-            newScore: winner.score
+            count: result.count
         });
 
     } catch (error) {
