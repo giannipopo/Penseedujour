@@ -1,9 +1,15 @@
 import Link from 'next/link';
-import { PenSquare, Home, User, Users, Swords, Trophy } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
+import NavbarContent from './NavbarContent';
 
 export default async function Navbar() {
     const user = await getCurrentUser();
+
+    async function logoutAction() {
+        "use server";
+        const { signOut } = await import("@/auth");
+        await signOut();
+    }
 
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
@@ -15,73 +21,7 @@ export default async function Navbar() {
                     <span className="bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">Ranko Request</span>
                 </Link>
 
-                <div className="flex items-center gap-4">
-                    <Link
-                        href="/"
-                        className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                        <Home className="h-4 w-4" />
-                        <span className="hidden sm:inline">Feed</span>
-                    </Link>
-                    <Link
-                        href="/divisions"
-                        className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                        <Trophy className="h-4 w-4" />
-                        <span className="hidden sm:inline">Classement</span>
-                    </Link>
-                    {user?.role === 'ADMIN' && (
-                        <Link
-                            href="/users"
-                            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                            <Users className="h-4 w-4" />
-                            <span className="hidden sm:inline">Utilisateurs</span>
-                        </Link>
-                    )}
-                    {user?.role === 'ADMIN' && (
-                        <Link
-                            href="/confrontation"
-                            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                        >
-                            <Swords className="h-4 w-4" />
-                            <span className="hidden sm:inline">Confrontation</span>
-                        </Link>
-                    )}
-                    <Link
-                        href="/post"
-                        className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20"
-                    >
-                        <PenSquare className="h-4 w-4" />
-                        <span>Poster</span>
-                    </Link>
-                    {user ? (
-                        <div className="flex items-center gap-4 border-l border-border pl-4">
-                            <div className="flex items-center gap-2">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-bold">
-                                    {(user.displayName || "U").charAt(0).toUpperCase()}
-                                </div>
-                                <span className="hidden text-sm font-medium sm:inline">{user.displayName}</span>
-                            </div>
-                            <form action={async () => {
-                                "use server"
-                                const { signOut } = await import("@/auth")
-                                await signOut()
-                            }}>
-                                <button className="text-xs text-muted-foreground hover:text-destructive transition-colors">
-                                    Déconnexion
-                                </button>
-                            </form>
-                        </div>
-                    ) : (
-                        <Link
-                            href="/auth/signin"
-                            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-                        >
-                            Se connecter
-                        </Link>
-                    )}
-                </div>
+                <NavbarContent user={user as any} logoutAction={logoutAction} />
             </div>
         </nav>
     );
