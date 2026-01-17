@@ -125,6 +125,7 @@ export default async function Home({ searchParams }: HomeProps) {
               initialCommentCount={thought.commentCount}
               userRole={userRole}
               isHidden={thought.isHidden}
+              category={thought.category}
             />
           ))
         ) : (

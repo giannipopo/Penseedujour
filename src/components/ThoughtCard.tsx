@@ -20,6 +20,7 @@ interface ThoughtCardProps {
     initialCommentCount: number;
     userRole?: string; // "ADMIN" | "USER"
     isHidden?: boolean;
+    category?: string;
 }
 
 export default function ThoughtCard({
@@ -33,6 +34,7 @@ export default function ThoughtCard({
     initialCommentCount,
     userRole = "USER",
     isHidden = false,
+    category = "GENERAL",
 }: ThoughtCardProps) {
     const router = useRouter();
     const date = new Date(createdAt);
@@ -97,8 +99,15 @@ export default function ThoughtCard({
 
     if (hidden && userRole !== 'ADMIN') return null;
 
+    const isConfrontation = category === 'CONFRONTATION';
+    const cardStyle = isConfrontation
+        ? 'border-orange-500/50 bg-gradient-to-br from-orange-500/5 to-red-500/5 hover:border-orange-500 hover:shadow-orange-500/20'
+        : hidden
+            ? 'border-red-200 bg-red-50 opacity-75'
+            : 'border-border bg-card';
+
     return (
-        <div className={`animate-fade-in group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md ${hidden ? 'border-red-200 bg-red-50 opacity-75' : 'border-border'}`}>
+        <div className={`animate-fade-in group relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all hover:shadow-md ${cardStyle}`}>
             <div className="absolute -right-4 -top-4 text-primary/5 transition-transform group-hover:scale-110 pointer-events-none">
                 <Quote size={80} />
             </div>
@@ -110,6 +119,7 @@ export default function ThoughtCard({
                             {initialChar}
                         </div>
                         <span className="font-semibold text-foreground">{safeDisplayName}</span>
+                        {isConfrontation && <span className="text-lg" title="Match Trash Talk">🥊</span>}
                         {hidden && <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full ml-2">MASQUÉ</span>}
                     </div>
 

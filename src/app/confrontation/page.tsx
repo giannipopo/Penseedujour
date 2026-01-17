@@ -30,6 +30,8 @@ export default function ConfrontationPage() {
     const [selectedWinner, setSelectedWinner] = useState<'A' | 'B' | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [message, setMessage] = useState('');
+
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -69,7 +71,7 @@ export default function ConfrontationPage() {
             const res = await fetch('/api/confrontation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ winnerIds }),
+                body: JSON.stringify({ winnerIds, message }),
             });
 
             if (!res.ok) throw new Error("Échec de la confrontation");
@@ -279,6 +281,23 @@ export default function ConfrontationPage() {
                     </div>
                 </div>
             </div>
+            {selectedWinner && (
+                <div className="mb-8 max-w-2xl mx-auto">
+                    <label className="block text-sm font-medium text-muted-foreground mb-2 ml-1">
+                        Un petit message pour charrier les perdants ? (Optionnel)
+                    </label>
+                    <textarea
+                        className="w-full rounded-xl border border-input bg-card p-4 text-base shadow-sm focus:border-primary focus:ring-1 focus:ring-primary min-h-[100px] resize-none"
+                        placeholder="Ex: C'était trop facile..."
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        maxLength={280}
+                    />
+                    <div className="mt-1 text-right text-xs text-muted-foreground">
+                        {message.length} / 280
+                    </div>
+                </div>
+            )}
 
             <div className="flex justify-center">
                 <button
