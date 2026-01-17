@@ -6,6 +6,7 @@ export interface User {
     email: string | null;
     name: string | null;
     displayName: string;
+    role: string;
 }
 
 export async function getCurrentUser(): Promise<User | null> {
@@ -19,23 +20,24 @@ export async function getCurrentUser(): Promise<User | null> {
             const name = session.user.name ?? null;
             const displayName = (session.user as any).displayName || session.user.name || "Utilisateur";
 
-            // SÉCURITÉ : On s'assure que le displayName est en base pour le feed
-            // On ne le fait que si on a un ID valide et que c'est une requête réelle
-            try {
-                // On vérifie si l'utilisateur a déjà un displayName en base
-                const dbUser = await prisma.user.findUnique({
-                    where: { id },
-                    select: { displayName: true }
-                });
+            // Fetch role from DB to ensure it's up to date
+            const dbUserRole = await prisma.user.findUnique({
+                where: { id },
+                select: { role: true, displayName: true }
+            });
 
-                if (dbUser && !dbUser.displayName && displayName !== "Utilisateur") {
+            const role = dbUserRole?.role || "USER";
+
+            // Sync displayName if needed (already existing logic, slightly refactored)
+            if (dbUserRole && !dbUserRole.displayName && displayName !== "Utilisateur") {
+                try {
                     await prisma.user.update({
                         where: { id },
                         data: { displayName }
                     });
+                } catch (e) {
+                    console.error("Failed to sync displayName to DB", e);
                 }
-            } catch (e) {
-                console.error("Failed to sync displayName to DB", e);
             }
 
             return {
@@ -43,6 +45,7 @@ export async function getCurrentUser(): Promise<User | null> {
                 email,
                 name,
                 displayName,
+                role
             };
         }
 
@@ -67,6 +70,7 @@ export async function getCurrentUser(): Promise<User | null> {
                     email: user.email,
                     name: null,
                     displayName: user.displayName || "Dev User",
+                    role: "ADMIN" // Dev user is admin by default
                 };
             }
         }
