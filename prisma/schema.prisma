@@ -15,6 +15,7 @@ model User {
   image         String?
   displayName   String?   // Custom field for PenseeduJ
   role          String    @default("USER") // ADMIN, USER
+  score         Int       @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]

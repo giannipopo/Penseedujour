@@ -11,6 +11,7 @@ interface UserData {
     id: string;
     displayName: string;
     image: string | null;
+    score: number;
     createdAt: string;
     thoughtCount: number;
 }
@@ -84,7 +85,7 @@ export default function UsersPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
                 {users.map((user) => (
-                    <div key={user.id} className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md">
+                    <div key={user.id} className="relative flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md">
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
                             {user.image ? (
                                 <img src={user.image} alt={user.displayName} className="h-full w-full rounded-full object-cover" />
@@ -98,6 +99,12 @@ export default function UsersPage() {
                                 <span>Inscrit le {format(new Date(user.createdAt), 'd MMMM yyyy', { locale: fr })}</span>
                                 <span className="text-primary font-medium mt-0.5">{user.thoughtCount} feedback{user.thoughtCount > 1 ? 's' : ''}</span>
                             </div>
+                        </div>
+
+                        {/* Score display */}
+                        <div className="absolute right-4 top-4 flex flex-col items-end">
+                            <span className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Score</span>
+                            <span className="text-xl font-black text-amber-500">{user.score}</span>
                         </div>
                     </div>
                 ))}

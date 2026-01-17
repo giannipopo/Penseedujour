@@ -17,6 +17,7 @@ export async function GET(request: Request) {
                 id: true,
                 displayName: true,
                 image: true,
+                score: true,
                 createdAt: true,
                 _count: {
                     select: { thoughts: true }
@@ -28,12 +29,13 @@ export async function GET(request: Request) {
         });
 
         // Format for frontend
-        const formattedUsers = users.map(u => ({
+        const formattedUsers = users.map((u: any) => ({
             id: u.id,
             displayName: u.displayName || 'Utilisateur',
             image: u.image,
+            score: u.score || 0,
             createdAt: u.createdAt,
-            thoughtCount: u._count.thoughts
+            thoughtCount: u._count?.thoughts || 0
         }));
 
         return NextResponse.json(formattedUsers);

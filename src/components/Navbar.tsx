@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PenSquare, Home, User, Users } from 'lucide-react';
+import { PenSquare, Home, User, Users, Swords } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 
 export default async function Navbar() {
@@ -30,6 +30,15 @@ export default async function Navbar() {
                         >
                             <Users className="h-4 w-4" />
                             <span className="hidden sm:inline">Utilisateurs</span>
+                        </Link>
+                    )}
+                    {user?.role === 'ADMIN' && (
+                        <Link
+                            href="/confrontation"
+                            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            <Swords className="h-4 w-4" />
+                            <span className="hidden sm:inline">Confrontation</span>
                         </Link>
                     )}
                     <Link
