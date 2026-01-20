@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Home, Trophy, Users, Swords, PenSquare, Menu, X, LogOut } from 'lucide-react';
+import { Trophy, Users, Swords, Menu, X, LogOut } from 'lucide-react';
 
 interface User {
     id: string;
@@ -33,15 +33,8 @@ export default function NavbarContent({ user, logoutAction }: NavbarContentProps
                     href="/"
                     className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
-                    <Home className="h-4 w-4" />
-                    <span className="hidden lg:inline">Feed</span>
-                </Link>
-                <Link
-                    href="/divisions"
-                    className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
                     <Trophy className="h-4 w-4" />
-                    <span className="hidden lg:inline">Classement</span>
+                    <span className="hidden lg:inline">Leaderboard</span>
                 </Link>
                 {user?.role === 'ADMIN' && (
                     <Link
@@ -55,19 +48,12 @@ export default function NavbarContent({ user, logoutAction }: NavbarContentProps
                 {user?.role === 'ADMIN' && (
                     <Link
                         href="/confrontation"
-                        className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                        className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20"
                     >
                         <Swords className="h-4 w-4" />
-                        <span className="hidden lg:inline">Confrontation</span>
+                        <span>Nouveau Match</span>
                     </Link>
                 )}
-                <Link
-                    href="/post"
-                    className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20"
-                >
-                    <PenSquare className="h-4 w-4" />
-                    <span>Poster</span>
-                </Link>
 
                 {user ? (
                     <div className="flex items-center gap-4 border-l border-border pl-4">
@@ -118,20 +104,10 @@ export default function NavbarContent({ user, logoutAction }: NavbarContentProps
                         onClick={closeMenu}
                         className="flex items-center gap-3 rounded-md p-3 text-sm font-medium hover:bg-muted transition-colors"
                     >
-                        <div className="p-2 bg-primary/10 rounded-full text-primary">
-                            <Home className="h-5 w-5" />
-                        </div>
-                        Feed
-                    </Link>
-                    <Link
-                        href="/divisions"
-                        onClick={closeMenu}
-                        className="flex items-center gap-3 rounded-md p-3 text-sm font-medium hover:bg-muted transition-colors"
-                    >
                         <div className="p-2 bg-yellow-500/10 rounded-full text-yellow-500">
                             <Trophy className="h-5 w-5" />
                         </div>
-                        Classement
+                        Leaderboard
                     </Link>
                     {user?.role === 'ADMIN' && (
                         <>
@@ -153,21 +129,10 @@ export default function NavbarContent({ user, logoutAction }: NavbarContentProps
                                 <div className="p-2 bg-red-500/10 rounded-full text-red-500">
                                     <Swords className="h-5 w-5" />
                                 </div>
-                                Confrontation
+                                Nouveau Match
                             </Link>
                         </>
                     )}
-
-                    <div className="my-2 border-t border-border" />
-
-                    <Link
-                        href="/post"
-                        onClick={closeMenu}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-base font-bold text-primary-foreground shadow-lg active:scale-95 transition-all"
-                    >
-                        <PenSquare className="h-5 w-5" />
-                        Poster une pensée
-                    </Link>
 
                     <div className="my-2 border-t border-border" />
 

@@ -58,26 +58,37 @@ export default function ConfrontationPage() {
         setIsSubmitting(true);
 
         let winnerIds: string[] = [];
+        let loserIds: string[] = [];
 
         if (mode === 'single') {
-            if (selectedWinner === 'A') winnerIds = [userA];
-            if (selectedWinner === 'B') winnerIds = [userB];
+            if (selectedWinner === 'A') {
+                winnerIds = [userA];
+                loserIds = [userB];
+            } else {
+                winnerIds = [userB];
+                loserIds = [userA];
+            }
         } else {
-            if (selectedWinner === 'A') winnerIds = [teamA1, teamA2];
-            if (selectedWinner === 'B') winnerIds = [teamB1, teamB2];
+            if (selectedWinner === 'A') {
+                winnerIds = [teamA1, teamA2];
+                loserIds = [teamB1, teamB2];
+            } else {
+                winnerIds = [teamB1, teamB2];
+                loserIds = [teamA1, teamA2];
+            }
         }
 
         try {
             const res = await fetch('/api/confrontation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ winnerIds, message }),
+                body: JSON.stringify({ winnerIds, loserIds, message }),
             });
 
             if (!res.ok) throw new Error("Échec de la confrontation");
 
-            // Redirect to users list to see score update
-            router.push('/users');
+            // Redirect to leaderboard to see ELO update
+            router.push('/');
         } catch (err: any) {
             alert(err.message);
             setIsSubmitting(false);

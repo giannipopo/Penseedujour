@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { getDateKeyParis, validateThoughtContent } from '@/lib/utils';
+import { calculateEloChange } from '@/lib/elo';
 
 // POST /api/confrontation
 export async function POST(request: Request) {
@@ -14,52 +15,99 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { winnerId, winnerIds } = body;
+        const { winnerIds, loserIds, message } = body;
 
-        // Determine list of winners
-        let winners: string[] = [];
-        if (winnerIds && Array.isArray(winnerIds)) {
-            winners = winnerIds;
-        } else if (winnerId) {
-            winners = [winnerId];
+        // Validation
+        if (!winnerIds || !Array.isArray(winnerIds) || winnerIds.length === 0) {
+            return NextResponse.json({ error: 'Winner IDs required' }, { status: 400 });
+        }
+        if (!loserIds || !Array.isArray(loserIds) || loserIds.length === 0) {
+            return NextResponse.json({ error: 'Loser IDs required' }, { status: 400 });
         }
 
-        if (winners.length === 0) {
-            return NextResponse.json({ error: 'Winner ID(s) required' }, { status: 400 });
-        }
-
-
-        // Increment score for all winners
-        const result = await prisma.user.updateMany({
-            where: { id: { in: winners } },
-            data: {
-                score: { increment: 1 }
-            }
+        // Fetch all participants
+        const allIds = [...winnerIds, ...loserIds];
+        const users = await prisma.user.findMany({
+            where: { id: { in: allIds } },
+            select: { id: true, elo: true }
         });
 
-        // Create thought if message is provided
-        const message = body.message;
+        const userMap = new Map(users.map(u => [u.id, u]));
+
+        // Calculate Average ELOs
+        let winnerEloSum = 0;
+        let missingUser = false;
+        for (const id of winnerIds) {
+            const u = userMap.get(id);
+            if (!u) missingUser = true;
+            else winnerEloSum += u.elo;
+        }
+
+        let loserEloSum = 0;
+        for (const id of loserIds) {
+            const u = userMap.get(id);
+            if (!u) missingUser = true;
+            else loserEloSum += u.elo;
+        }
+
+        if (missingUser) {
+            return NextResponse.json({ error: 'Some users not found' }, { status: 404 });
+        }
+
+        const winnerAvgElo = winnerEloSum / winnerIds.length;
+        const loserAvgElo = loserEloSum / loserIds.length;
+
+        // Calculate Delta
+        // User said: "Si je gagne un match contre qq qui a un ELO au dessus de moi => je gagne plus de point"
+        // This is standard ELO behavior (handled by calculateEloChange)
+        const eloDelta = calculateEloChange(winnerAvgElo, loserAvgElo);
+
+        const updates = [];
+
+        // Update Winners
+        for (const id of winnerIds) {
+            updates.push(prisma.user.update({
+                where: { id },
+                data: {
+                    elo: { increment: eloDelta },
+                    score: { increment: 1 } // Keep tracking wins in 'score' for legacy/stats
+                }
+            }));
+        }
+
+        // Update Losers
+        for (const id of loserIds) {
+            updates.push(prisma.user.update({
+                where: { id },
+                data: {
+                    elo: { decrement: eloDelta }
+                    // Losers don't get 'score' increment
+                }
+            }));
+        }
+
+        // Create Message (Thought)
         if (message && typeof message === 'string' && message.trim().length > 0) {
             const validationError = validateThoughtContent(message);
-            // We only create the thought if valid, but we don't fail the whole transaction if it fails validation (optional choice, but better for UX to not rollback the score if just the message is long? Or maybe user wants it all or nothing?
-            // Given the prompt "je puisse aussi écrire un message", failure to write message should probably not be silent, but here catching it might be complex if we already updated scores.
-            // Let's assume validation passes or we just skip if invalid to avoid errors.
-            // Actually, if validation fails, it's better to just log or ignore than crash the request after scores are updated.
             if (!validationError) {
-                await prisma.thought.create({
+                updates.push(prisma.thought.create({
                     data: {
                         userId: user.id,
                         content: message.trim(),
-                        category: 'CONFRONTATION', // New category for these events
+                        category: 'CONFRONTATION',
                         dateKey: getDateKeyParis(),
                     }
-                });
+                }));
             }
         }
 
+        // Execute
+        await prisma.$transaction(updates);
+
         return NextResponse.json({
             success: true,
-            count: result.count
+            eloDelta,
+            message: `Winners gained ${eloDelta} ELO`
         });
 
     } catch (error) {
