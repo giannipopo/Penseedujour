@@ -43,6 +43,32 @@ export default function ConfrontationPage() {
     const [selectedWinner, setSelectedWinner] = useState<'A' | 'B' | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState('');
+    const [currentUser, setCurrentUser] = useState<{ id: string; displayName: string; image: string | null } | null>(null);
+
+    // Fetch current user
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const res = await fetch('/api/auth/session');
+                if (res.ok) {
+                    const session = await res.json();
+                    if (session?.user) {
+                        setCurrentUser({
+                            id: session.user.id,
+                            displayName: session.user.displayName || session.user.name,
+                            image: session.user.image
+                        });
+                        // Pre-fill with current user
+                        setUserA(session.user.id);
+                        setTeamA1(session.user.id);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching current user:', error);
+            }
+        };
+        fetchCurrentUser();
+    }, []);
 
     // Fetch match history
     useEffect(() => {

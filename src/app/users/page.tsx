@@ -90,7 +90,11 @@ export default function UsersPage() {
                     {searchResults.map((user) => {
                         const division = getDivision(user.elo);
                         return (
-                            <div key={user.id} className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md">
+                            <Link
+                                key={user.id}
+                                href={`/profile/${user.id}`}
+                                className="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md hover:border-primary"
+                            >
                                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-lg font-bold overflow-hidden border-2 border-border">
                                     {user.image ? (
                                         <img src={user.image} alt={user.displayName} className="h-full w-full object-cover" />
@@ -112,7 +116,7 @@ export default function UsersPage() {
                                         ELO
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         );
                     })}
                 </div>

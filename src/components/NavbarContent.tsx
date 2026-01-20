@@ -45,6 +45,15 @@ export default function NavbarContent({ user, logoutAction }: NavbarContentProps
                         <span className="hidden lg:inline">Utilisateurs</span>
                     </Link>
                 )}
+                {user && (
+                    <Link
+                        href="/profile"
+                        className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                        <Users className="h-4 w-4" />
+                        <span className="hidden lg:inline">Profil</span>
+                    </Link>
+                )}
                 {user?.role === 'ADMIN' && (
                     <Link
                         href="/confrontation"
@@ -132,6 +141,18 @@ export default function NavbarContent({ user, logoutAction }: NavbarContentProps
                                 Nouveau Match
                             </Link>
                         </>
+                    )}
+                    {user && (
+                        <Link
+                            href="/profile"
+                            onClick={closeMenu}
+                            className="flex items-center gap-3 rounded-md p-3 text-sm font-medium hover:bg-muted transition-colors"
+                        >
+                            <div className="p-2 bg-green-500/10 rounded-full text-green-500">
+                                <Users className="h-5 w-5" />
+                            </div>
+                            Mon Profil
+                        </Link>
                     )}
 
                     <div className="my-2 border-t border-border" />
