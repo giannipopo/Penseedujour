@@ -101,6 +101,23 @@ export async function POST(request: Request) {
             }
         }
 
+        // Save Match History
+        const matchData: any = {
+            teamA1Id: winnerIds[0],
+            teamB1Id: loserIds[0],
+            winner: 'A', // Winners are always team A in our data structure
+            eloDelta,
+            message: message?.trim() || null,
+        };
+
+        // Add second players if in double mode
+        if (winnerIds.length > 1) matchData.teamA2Id = winnerIds[1];
+        if (loserIds.length > 1) matchData.teamB2Id = loserIds[1];
+
+        updates.push(prisma.match.create({
+            data: matchData
+        }));
+
         // Execute
         await prisma.$transaction(updates);
 

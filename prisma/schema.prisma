@@ -101,3 +101,30 @@ model Comment {
   @@index([thoughtId])
   @@index([userId])
 }
+
+model Match {
+  id        String   @id @default(cuid())
+  // Team A
+  teamA1Id  String
+  teamA2Id  String?  // Optional for 1v1 matches
+  // Team B
+  teamB1Id  String
+  teamB2Id  String?  // Optional for 1v1 matches
+  
+  // Winner team ('A' or 'B')
+  winner    String
+  
+  // ELO changes
+  eloDelta  Int      @default(0)
+  
+  // Optional message
+  message   String?  @db.VarChar(280)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([createdAt(sort: Desc)])
+  @@index([teamA1Id])
+  @@index([teamA2Id])
+  @@index([teamB1Id])
+  @@index([teamB2Id])
+}

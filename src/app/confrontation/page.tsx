@@ -2,20 +2,33 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Swords, Trophy, Crown } from 'lucide-react';
+import { ArrowLeft, Swords, History, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import UserSearchInput from '@/components/UserSearchInput';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-interface UserData {
+interface MatchHistory {
     id: string;
-    displayName: string;
-    image: string | null;
+    teamA1Id: string;
+    teamA2Id: string | null;
+    teamB1Id: string;
+    teamB2Id: string | null;
+    winner: string;
+    eloDelta: number;
+    message: string | null;
+    createdAt: string;
+    teamA1: { displayName: string; image: string | null } | null;
+    teamA2: { displayName: string; image: string | null } | null;
+    teamB1: { displayName: string; image: string | null } | null;
+    teamB2: { displayName: string; image: string | null } | null;
 }
 
 export default function ConfrontationPage() {
     const router = useRouter();
-    const [users, setUsers] = useState<UserData[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [mode, setMode] = useState<'single' | 'double'>('single');
+    const [showHistory, setShowHistory] = useState(false);
+    const [matchHistory, setMatchHistory] = useState<MatchHistory[]>([]);
 
     // Single Mode
     const [userA, setUserA] = useState<string>("");
@@ -29,28 +42,22 @@ export default function ConfrontationPage() {
 
     const [selectedWinner, setSelectedWinner] = useState<'A' | 'B' | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState('');
 
-
+    // Fetch match history
     useEffect(() => {
-        const fetchUsers = async () => {
+        const fetchHistory = async () => {
             try {
-                const res = await fetch('/api/users');
-                if (!res.ok) {
-                    if (res.status === 403) throw new Error("Accès réservé aux administrateurs");
-                    throw new Error("Erreur lors du chargement des utilisateurs");
+                const res = await fetch('/api/matches');
+                if (res.ok) {
+                    const data = await res.json();
+                    setMatchHistory(data);
                 }
-                const data = await res.json();
-                setUsers(data);
-            } catch (err: any) {
-                setError(err.message);
-            } finally {
-                setIsLoading(false);
+            } catch (error) {
+                console.error('Error fetching match history:', error);
             }
         };
-
-        fetchUsers();
+        fetchHistory();
     }, []);
 
     const handleConfrontation = async () => {
@@ -87,7 +94,6 @@ export default function ConfrontationPage() {
 
             if (!res.ok) throw new Error("Échec de la confrontation");
 
-            // Redirect to leaderboard to see ELO update
             router.push('/');
         } catch (err: any) {
             alert(err.message);
@@ -95,42 +101,40 @@ export default function ConfrontationPage() {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="container mx-auto flex max-w-2xl justify-center py-20">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
-        );
-    }
+    const loadMatchFromHistory = (match: MatchHistory) => {
+        // Determine mode
+        const isDouble = match.teamA2Id !== null && match.teamB2Id !== null;
+        setMode(isDouble ? 'double' : 'single');
 
-    if (error) {
-        return (
-            <div className="container mx-auto flex max-w-2xl flex-col items-center justify-center py-20 text-center">
-                <h1 className="text-2xl font-bold text-destructive">Accès Refusé</h1>
-                <p className="mt-2 text-muted-foreground">{error}</p>
-                <Link href="/" className="mt-8 rounded-full bg-secondary px-6 py-2.5 font-medium">Retry</Link>
-            </div>
-        );
-    }
+        // Load players
+        if (isDouble) {
+            setTeamA1(match.teamA1Id);
+            setTeamA2(match.teamA2Id!);
+            setTeamB1(match.teamB1Id);
+            setTeamB2(match.teamB2Id!);
+        } else {
+            setUserA(match.teamA1Id);
+            setUserB(match.teamB1Id);
+        }
 
-    const getUser = (id: string) => users.find(u => u.id === id);
-
-    const UserAvatar = ({ id }: { id: string }) => {
-        const u = getUser(id);
-        if (!u) return <div className="h-12 w-12 rounded-full bg-muted"></div>
-        return (
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold overflow-hidden border border-border">
-                {u.image ? <img src={u.image} className="w-full h-full object-cover" /> : u.displayName.charAt(0)}
-            </div>
-        )
-    }
+        setSelectedWinner(null);
+        setMessage('');
+        setShowHistory(false);
+    };
 
     const isValid = () => {
         if (mode === 'single') return userA && userB && userA !== userB && selectedWinner;
         return teamA1 && teamA2 && teamB1 && teamB2 &&
             new Set([teamA1, teamA2, teamB1, teamB2]).size === 4 &&
             selectedWinner;
-    }
+    };
+
+    const getExcludedIds = () => {
+        if (mode === 'single') {
+            return [userA, userB].filter(Boolean);
+        }
+        return [teamA1, teamA2, teamB1, teamB2].filter(Boolean);
+    };
 
     return (
         <div className="container mx-auto max-w-3xl px-4 py-8">
@@ -148,21 +152,69 @@ export default function ConfrontationPage() {
                 <h1 className="text-3xl font-extrabold tracking-tight">Nouvelle Confrontation</h1>
                 <p className="mt-2 text-muted-foreground">Sélectionnez les adversaires et désignez le vainqueur.</p>
 
-                <div className="mt-6 inline-flex rounded-lg border border-border bg-card p-1">
+                <div className="mt-6 flex gap-3 justify-center">
+                    <div className="inline-flex rounded-lg border border-border bg-card p-1">
+                        <button
+                            onClick={() => { setMode('single'); setSelectedWinner(null); }}
+                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${mode === 'single' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-secondary'}`}
+                        >
+                            1 VS 1
+                        </button>
+                        <button
+                            onClick={() => { setMode('double'); setSelectedWinner(null); }}
+                            className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${mode === 'double' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-secondary'}`}
+                        >
+                            2 VS 2
+                        </button>
+                    </div>
+
                     <button
-                        onClick={() => { setMode('single'); setSelectedWinner(null); }}
-                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${mode === 'single' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-secondary'}`}
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-muted transition-colors"
                     >
-                        1 VS 1
-                    </button>
-                    <button
-                        onClick={() => { setMode('double'); setSelectedWinner(null); }}
-                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${mode === 'double' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-secondary'}`}
-                    >
-                        2 VS 2
+                        <History className="h-4 w-4" />
+                        Historique
                     </button>
                 </div>
             </header>
+
+            {/* Match History */}
+            {showHistory && (
+                <div className="mb-8 rounded-xl border border-border bg-card p-6">
+                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        Matchs récents
+                    </h2>
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {matchHistory.length > 0 ? matchHistory.map((match) => (
+                            <button
+                                key={match.id}
+                                onClick={() => loadMatchFromHistory(match)}
+                                className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted transition-colors"
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex-1">
+                                        <div className="font-medium text-sm">
+                                            {match.teamA1?.displayName || 'Joueur 1'}
+                                            {match.teamA2 && ` & ${match.teamA2.displayName}`}
+                                            {' vs '}
+                                            {match.teamB1?.displayName || 'Joueur 2'}
+                                            {match.teamB2 && ` & ${match.teamB2.displayName}`}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {formatDistanceToNow(new Date(match.createdAt), { addSuffix: true, locale: fr })}
+                                            {' • '}
+                                            +{match.eloDelta} ELO
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        )) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">Aucun match enregistré</p>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                 {/* Team A */}
@@ -170,50 +222,31 @@ export default function ConfrontationPage() {
                     <h2 className="mb-4 text-center font-bold text-lg">{mode === 'single' ? 'Joueur 1' : 'Équipe A'}</h2>
 
                     <div className="space-y-3">
-                        {/* Player A1 */}
-                        <select
-                            className="w-full rounded-md border border-input bg-background p-2"
+                        <UserSearchInput
                             value={mode === 'single' ? userA : teamA1}
-                            onChange={(e) => {
-                                if (mode === 'single') setUserA(e.target.value);
-                                else setTeamA1(e.target.value);
+                            onChange={(id) => {
+                                if (mode === 'single') setUserA(id);
+                                else setTeamA1(id);
                                 setSelectedWinner(null);
                             }}
-                        >
-                            <option value="">Sélectionner...</option>
-                            {users.map(u => (
-                                <option key={u.id} value={u.id}>{u.displayName}</option>
-                            ))}
-                        </select>
+                            placeholder="Joueur 1..."
+                            excludeIds={getExcludedIds()}
+                        />
 
-                        {/* Player A2 (Double only) */}
                         {mode === 'double' && (
-                            <select
-                                className="w-full rounded-md border border-input bg-background p-2"
+                            <UserSearchInput
                                 value={teamA2}
-                                onChange={(e) => {
-                                    setTeamA2(e.target.value);
+                                onChange={(id) => {
+                                    setTeamA2(id);
                                     setSelectedWinner(null);
                                 }}
-                            >
-                                <option value="">Sélectionner...</option>
-                                {users.map(u => (
-                                    <option key={u.id} value={u.id}>{u.displayName}</option>
-                                ))}
-                            </select>
+                                placeholder="Joueur 2..."
+                                excludeIds={getExcludedIds()}
+                            />
                         )}
                     </div>
 
-                    <div className="mt-6 flex flex-col items-center">
-                        <div className="flex gap-2 justify-center mb-4">
-                            {mode === 'single' && userA && <UserAvatar id={userA} />}
-                            {mode === 'double' && (
-                                <>
-                                    {teamA1 && <UserAvatar id={teamA1} />}
-                                    {teamA2 && <UserAvatar id={teamA2} />}
-                                </>
-                            )}
-                        </div>
+                    <div className="mt-6">
                         <button
                             onClick={() => setSelectedWinner('A')}
                             className={`w-full py-2 px-4 rounded-full font-bold transition-all ${selectedWinner === 'A'
@@ -225,62 +258,36 @@ export default function ConfrontationPage() {
                     </div>
                 </div>
 
-                {/* VS Badge */}
-                <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-20 items-center justify-center">
-                    <div className="bg-background rounded-full p-2 border border-border shadow-sm">
-                        <span className="font-black text-xl italic text-muted-foreground">VS</span>
-                    </div>
-                </div>
-
                 {/* Team B */}
                 <div className={`rounded-xl border p-6 transition-all ${selectedWinner === 'B' ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5' : 'border-border bg-card'}`}>
                     <h2 className="mb-4 text-center font-bold text-lg">{mode === 'single' ? 'Joueur 2' : 'Équipe B'}</h2>
 
                     <div className="space-y-3">
-                        {/* Player B1 */}
-                        <select
-                            className="w-full rounded-md border border-input bg-background p-2"
+                        <UserSearchInput
                             value={mode === 'single' ? userB : teamB1}
-                            onChange={(e) => {
-                                if (mode === 'single') setUserB(e.target.value);
-                                else setTeamB1(e.target.value);
+                            onChange={(id) => {
+                                if (mode === 'single') setUserB(id);
+                                else setTeamB1(id);
                                 setSelectedWinner(null);
                             }}
-                        >
-                            <option value="">Sélectionner...</option>
-                            {users.map(u => (
-                                <option key={u.id} value={u.id}>{u.displayName}</option>
-                            ))}
-                        </select>
+                            placeholder="Joueur 1..."
+                            excludeIds={getExcludedIds()}
+                        />
 
-                        {/* Player B2 (Double only) */}
                         {mode === 'double' && (
-                            <select
-                                className="w-full rounded-md border border-input bg-background p-2"
+                            <UserSearchInput
                                 value={teamB2}
-                                onChange={(e) => {
-                                    setTeamB2(e.target.value);
+                                onChange={(id) => {
+                                    setTeamB2(id);
                                     setSelectedWinner(null);
                                 }}
-                            >
-                                <option value="">Sélectionner...</option>
-                                {users.map(u => (
-                                    <option key={u.id} value={u.id}>{u.displayName}</option>
-                                ))}
-                            </select>
+                                placeholder="Joueur 2..."
+                                excludeIds={getExcludedIds()}
+                            />
                         )}
                     </div>
 
-                    <div className="mt-6 flex flex-col items-center">
-                        <div className="flex gap-2 justify-center mb-4">
-                            {mode === 'single' && userB && <UserAvatar id={userB} />}
-                            {mode === 'double' && (
-                                <>
-                                    {teamB1 && <UserAvatar id={teamB1} />}
-                                    {teamB2 && <UserAvatar id={teamB2} />}
-                                </>
-                            )}
-                        </div>
+                    <div className="mt-6">
                         <button
                             onClick={() => setSelectedWinner('B')}
                             className={`w-full py-2 px-4 rounded-full font-bold transition-all ${selectedWinner === 'B'
@@ -292,6 +299,7 @@ export default function ConfrontationPage() {
                     </div>
                 </div>
             </div>
+
             {selectedWinner && (
                 <div className="mb-8 max-w-2xl mx-auto">
                     <label className="block text-sm font-medium text-muted-foreground mb-2 ml-1">
