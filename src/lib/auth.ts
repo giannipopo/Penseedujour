@@ -6,6 +6,7 @@ export interface User {
     email: string | null;
     name: string | null;
     displayName: string;
+    image: string | null;
     role: string;
 }
 
@@ -18,18 +19,19 @@ export async function getCurrentUser(): Promise<User | null> {
             const id = session.user.id!;
             const email = session.user.email ?? null;
             const name = session.user.name ?? null;
-            const displayName = (session.user as any).displayName || session.user.name || "Utilisateur";
+            let displayName = (session.user as any).displayName || session.user.name || "Utilisateur";
 
-            // Fetch role from DB to ensure it's up to date
-            const dbUserRole = await prisma.user.findUnique({
+            // Fetch role and other details from DB to ensure it's up to date
+            const dbUser = await prisma.user.findUnique({
                 where: { id },
-                select: { role: true, displayName: true }
+                select: { role: true, displayName: true, image: true }
             });
 
-            const role = dbUserRole?.role || "USER";
+            const role = dbUser?.role || "USER";
+            const image = dbUser?.image ?? session.user.image ?? null;
 
             // Sync displayName if needed (already existing logic, slightly refactored)
-            if (dbUserRole && !dbUserRole.displayName && displayName !== "Utilisateur") {
+            if (dbUser && !dbUser.displayName && displayName !== "Utilisateur") {
                 try {
                     await prisma.user.update({
                         where: { id },
@@ -38,6 +40,9 @@ export async function getCurrentUser(): Promise<User | null> {
                 } catch (e) {
                     console.error("Failed to sync displayName to DB", e);
                 }
+            } else if (dbUser?.displayName) {
+                // If DB has a display name, use it (it might be different from session if updated)
+                displayName = dbUser.displayName;
             }
 
             return {
@@ -45,6 +50,7 @@ export async function getCurrentUser(): Promise<User | null> {
                 email,
                 name,
                 displayName,
+                image,
                 role
             };
         }
@@ -70,6 +76,7 @@ export async function getCurrentUser(): Promise<User | null> {
                     email: user.email,
                     name: null,
                     displayName: user.displayName || "Dev User",
+                    image: user.image,
                     role: "ADMIN" // Dev user is admin by default
                 };
             }
