@@ -34,7 +34,14 @@ export default function NavbarContent({ user, logoutAction }: NavbarContentProps
                     className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                     <Trophy className="h-4 w-4" />
-                    <span className="hidden lg:inline">Leaderboard</span>
+                    <span className="hidden lg:inline">Accueil</span>
+                </Link>
+                <Link
+                    href="/divisions"
+                    className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    <Users className="h-4 w-4" />
+                    <span className="hidden lg:inline">Divisions</span>
                 </Link>
                 {user?.role === 'ADMIN' && (
                     <Link
@@ -116,7 +123,17 @@ export default function NavbarContent({ user, logoutAction }: NavbarContentProps
                         <div className="p-2 bg-yellow-500/10 rounded-full text-yellow-500">
                             <Trophy className="h-5 w-5" />
                         </div>
-                        Leaderboard
+                        Accueil
+                    </Link>
+                    <Link
+                        href="/divisions"
+                        onClick={closeMenu}
+                        className="flex items-center gap-3 rounded-md p-3 text-sm font-medium hover:bg-muted transition-colors"
+                    >
+                        <div className="p-2 bg-purple-500/10 rounded-full text-purple-500">
+                            <Users className="h-5 w-5" />
+                        </div>
+                        Divisions
                     </Link>
                     {user?.role === 'ADMIN' && (
                         <>

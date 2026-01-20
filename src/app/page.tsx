@@ -1,11 +1,13 @@
 import prisma from '@/lib/prisma';
-import { Trophy, Medal, Award, TrendingUp } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, ArrowRight, LayoutDashboard } from 'lucide-react';
 import { getDivision } from '@/lib/elo';
+import { getCurrentUser } from '@/lib/auth';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-async function getLeaderboard() {
+async function getUserRank(userId: string) {
   try {
     const users = await prisma.user.findMany({
       select: {
@@ -20,15 +22,20 @@ async function getLeaderboard() {
       }
     });
 
-    return users.map((user, index) => ({
+    const index = users.findIndex(u => u.id === userId);
+    if (index === -1) return null;
+
+    const user = users[index];
+    return {
       ...user,
       rank: index + 1,
       division: getDivision(user.elo),
-      displayName: user.displayName || 'Utilisateur'
-    }));
+      displayName: user.displayName || 'Utilisateur',
+      totalPlayers: users.length
+    };
   } catch (error) {
-    console.error("Error fetching leaderboard:", error);
-    return [];
+    console.error("Error fetching user rank:", error);
+    return null;
   }
 }
 
@@ -44,94 +51,104 @@ function getDivisionColor(division: number): string {
   return colors[Math.min(division, colors.length - 1)];
 }
 
-function getRankIcon(rank: number) {
-  if (rank === 1) return <Trophy className="h-6 w-6 text-yellow-500" />;
-  if (rank === 2) return <Medal className="h-6 w-6 text-slate-400" />;
-  if (rank === 3) return <Award className="h-6 w-6 text-amber-600" />;
-  return <span className="text-lg font-bold text-muted-foreground">#{rank}</span>;
-}
-
 export default async function Home() {
-  const leaderboard = await getLeaderboard();
+  const currentUser = await getCurrentUser();
+  const userRank = currentUser ? await getUserRank(currentUser.id) : null;
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-12">
+    <div className="container mx-auto max-w-4xl px-4 py-12 flex flex-col items-center">
       <header className="mb-12 text-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-yellow-500/10 px-4 py-1.5 text-sm font-bold text-yellow-600 mb-4 border border-yellow-200">
           <TrendingUp className="h-4 w-4" />
-          <span>Classement ELO</span>
+          <span>Tableau de Bord</span>
         </div>
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl text-yellow-500">
-          Leaderboard Ranko
+          Ranko Request
         </h1>
         <p className="mt-4 text-lg text-muted-foreground">
-          Système de classement ELO - Divisions par palier de 200 points
+          Gérez vos matchs et suivez votre progression.
         </p>
       </header>
 
-      <div className="flex flex-col gap-3">
-        {leaderboard.length > 0 ? (
-          leaderboard.map((player) => (
-            <div
-              key={player.id}
-              className={`rounded-2xl border-2 p-6 transition-all hover:shadow-lg ${player.rank <= 3
-                  ? 'border-yellow-500/30 bg-gradient-to-r from-yellow-500/5 to-transparent'
-                  : 'border-border bg-card'
-                }`}
-            >
-              <div className="flex items-center gap-4">
-                {/* Rank */}
-                <div className="flex-shrink-0 w-12 flex justify-center">
-                  {getRankIcon(player.rank)}
-                </div>
+      {userRank ? (
+        <div className="w-full max-w-lg mb-8">
+          <div className={`rounded-2xl border-2 p-8 transition-all hover:shadow-lg ${userRank.rank <= 3
+            ? 'border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-transparent'
+            : 'border-border bg-card'
+            }`}>
+            <div className="flex flex-col items-center text-center">
 
-                {/* Avatar */}
-                <div className="flex-shrink-0">
-                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold overflow-hidden border-2 border-border">
-                    {player.image ? (
-                      <img src={player.image} className="w-full h-full object-cover" alt={player.displayName} />
-                    ) : (
-                      player.displayName.charAt(0).toUpperCase()
-                    )}
-                  </div>
-                </div>
-
-                {/* Name & Stats */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold truncate">{player.displayName}</h3>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-sm text-muted-foreground">
-                      {player.score} victoire{player.score !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Division Badge */}
-                <div className={`flex-shrink-0 px-4 py-2 rounded-full border font-bold text-sm ${getDivisionColor(player.division)}`}>
-                  Division {player.division}
-                </div>
-
-                {/* ELO Score */}
-                <div className="flex-shrink-0 text-right">
-                  <div className="text-2xl font-extrabold text-yellow-500">
-                    {player.elo}
-                  </div>
-                  <div className="text-xs text-muted-foreground font-medium">
-                    ELO
-                  </div>
+              {/* Avatar */}
+              <div className="mb-4">
+                <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-bold overflow-hidden border-4 border-background shadow-xl">
+                  {userRank.image ? (
+                    <img src={userRank.image} className="w-full h-full object-cover" alt={userRank.displayName} />
+                  ) : (
+                    userRank.displayName.charAt(0).toUpperCase()
+                  )}
                 </div>
               </div>
+
+              <h2 className="text-2xl font-bold mb-2">{userRank.displayName}</h2>
+
+              <div className={`inline-flex px-4 py-1.5 rounded-full border font-bold text-sm mb-6 ${getDivisionColor(userRank.division)}`}>
+                Division {userRank.division}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 w-full mb-6">
+                <div className="bg-secondary/50 rounded-xl p-4">
+                  <div className="text-sm text-muted-foreground mb-1">Classement</div>
+                  <div className="text-2xl font-extrabold">#{userRank.rank}<span className="text-sm text-muted-foreground font-medium">/{userRank.totalPlayers}</span></div>
+                </div>
+                <div className="bg-secondary/50 rounded-xl p-4">
+                  <div className="text-sm text-muted-foreground mb-1">ELO Score</div>
+                  <div className="text-2xl font-extrabold text-yellow-500">{userRank.elo}</div>
+                </div>
+              </div>
+
+              <div className="text-sm text-muted-foreground">
+                {userRank.score} victoire{userRank.score !== 1 ? 's' : ''} au total
+              </div>
             </div>
-          ))
-        ) : (
-          <div className="rounded-2xl border-2 border-dashed border-border p-20 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              🏆
-            </div>
-            <h3 className="text-lg font-bold">Aucun joueur pour le moment</h3>
-            <p className="text-muted-foreground">Le classement apparaîtra dès les premiers matchs.</p>
           </div>
-        )}
+        </div>
+      ) : (
+        !currentUser && (
+          <div className="mb-10 text-center">
+            <Link href="/auth/signin" className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-lg font-bold text-primary-foreground shadow-lg hover:bg-primary/90 transition-all">
+              Se connecter pour voir mon rang
+            </Link>
+          </div>
+        )
+      )}
+
+      {/* Navigation Buttons */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+        <Link href="/divisions" className="group flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-accent transition-all">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg group-hover:bg-blue-500 group-hover:text-white transition-colors">
+              <LayoutDashboard className="h-5 w-5" />
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-bold">Toutes les Divisions</span>
+              <span className="text-xs text-muted-foreground">Voir le classement global</span>
+            </div>
+          </div>
+          <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+        </Link>
+
+        <Link href="/confrontation" className="group flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-accent hover:border-accent transition-all">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-500/10 text-red-500 rounded-lg group-hover:bg-red-500 group-hover:text-white transition-colors">
+              <TrendingUp className="h-5 w-5" />
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-bold">Nouveau Match</span>
+              <span className="text-xs text-muted-foreground">Enregistrer un score</span>
+            </div>
+          </div>
+          <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+        </Link>
       </div>
     </div>
   );

@@ -1,152 +1,144 @@
-"use client";
 
-import { useEffect, useState } from 'react';
+import prisma from '@/lib/prisma';
+import { Trophy, Medal, Award, TrendingUp, ArrowLeft } from 'lucide-react';
+import { getDivision } from '@/lib/elo';
 import Link from 'next/link';
-import { ArrowLeft, Trophy, Medal, Shield, Award, Crown } from 'lucide-react';
 
-interface UserData {
-    id: string;
-    displayName: string;
-    image: string | null;
-    score: number;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+async function getLeaderboard() {
+    try {
+        const users = await prisma.user.findMany({
+            select: {
+                id: true,
+                displayName: true,
+                image: true,
+                elo: true,
+                score: true,
+            },
+            orderBy: {
+                elo: 'desc'
+            }
+        });
+
+        return users.map((user, index) => ({
+            ...user,
+            rank: index + 1,
+            division: getDivision(user.elo),
+            displayName: user.displayName || 'Utilisateur'
+        }));
+    } catch (error) {
+        console.error("Error fetching leaderboard:", error);
+        return [];
+    }
 }
 
-// Logic: 0->Div5, 2->Div4...
-const getDivision = (score: number) => {
-    if (score >= 8) return 1;
-    if (score >= 6) return 2;
-    if (score >= 4) return 3;
-    if (score >= 2) return 4;
-    return 5;
-};
+function getDivisionColor(division: number): string {
+    const colors = [
+        'bg-slate-500/10 text-slate-600 border-slate-300', // Div 0
+        'bg-amber-500/10 text-amber-600 border-amber-300', // Div 1
+        'bg-blue-500/10 text-blue-600 border-blue-300',    // Div 2
+        'bg-purple-500/10 text-purple-600 border-purple-300', // Div 3
+        'bg-red-500/10 text-red-600 border-red-300',       // Div 4
+        'bg-emerald-500/10 text-emerald-600 border-emerald-300', // Div 5+
+    ];
+    return colors[Math.min(division, colors.length - 1)];
+}
 
-const DivisionSection = ({ division, users, icon: Icon, color, title }: { division: number, users: UserData[], icon: any, color: string, title: string }) => {
+function getRankIcon(rank: number) {
+    if (rank === 1) return <Trophy className="h-6 w-6 text-yellow-500" />;
+    if (rank === 2) return <Medal className="h-6 w-6 text-slate-400" />;
+    if (rank === 3) return <Award className="h-6 w-6 text-amber-600" />;
+    return <span className="text-lg font-bold text-muted-foreground">#{rank}</span>;
+}
+
+export default async function DivisionsPage() {
+    const leaderboard = await getLeaderboard();
+
     return (
-        <div className={`mb-8 w-full rounded-2xl border ${color} bg-card overflow-hidden shadow-sm`}>
-            <div className={`px-6 py-4 ${color.replace('border-', 'bg-').replace('-500', '-500/10')} flex items-center gap-3 border-b ${color}`}>
-                <Icon className={`h-6 w-6 ${color.replace('border-', 'text-')}`} />
-                <h2 className="text-xl font-bold">{title}</h2>
-                <span className="ml-auto rounded-full bg-background px-3 py-1 text-xs font-bold text-muted-foreground">
-                    {users.length} Joueur{users.length > 1 ? 's' : ''}
-                </span>
-            </div>
-            <div className="p-4">
-                {users.length === 0 ? (
-                    <div className="py-8 text-center text-sm text-muted-foreground italic">
-                        Aucun joueur dans cette division.
-                    </div>
-                ) : (
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {users.map((user) => (
-                            <div key={user.id} className="flex items-center gap-3 rounded-lg border border-border bg-background/50 p-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-sm font-bold">
-                                    {user.image ? (
-                                        <img src={user.image} alt={user.displayName} className="h-full w-full rounded-full object-cover" />
-                                    ) : (
-                                        user.displayName.charAt(0).toUpperCase()
-                                    )}
+        <div className="container mx-auto max-w-4xl px-4 py-12">
+            <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-4 w-4" />
+                Retour
+            </Link>
+            <header className="mb-12 text-center">
+                <div className="inline-flex items-center gap-2 rounded-full bg-yellow-500/10 px-4 py-1.5 text-sm font-bold text-yellow-600 mb-4 border border-yellow-200">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Classement ELO</span>
+                </div>
+                <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl text-yellow-500">
+                    Toutes les Divisions
+                </h1>
+                <p className="mt-4 text-lg text-muted-foreground">
+                    Classement complet de tous les joueurs inscrits
+                </p>
+            </header>
+
+            <div className="flex flex-col gap-3">
+                {leaderboard.length > 0 ? (
+                    leaderboard.map((player) => (
+                        <div
+                            key={player.id}
+                            className={`rounded-2xl border-2 p-6 transition-all hover:shadow-lg ${player.rank <= 3
+                                ? 'border-yellow-500/30 bg-gradient-to-r from-yellow-500/5 to-transparent'
+                                : 'border-border bg-card'
+                                }`}
+                        >
+                            <div className="flex items-center gap-4">
+                                {/* Rank */}
+                                <div className="flex-shrink-0 w-12 flex justify-center">
+                                    {getRankIcon(player.rank)}
                                 </div>
+
+                                {/* Avatar */}
+                                <div className="flex-shrink-0">
+                                    <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold overflow-hidden border-2 border-border">
+                                        {player.image ? (
+                                            <img src={player.image} className="w-full h-full object-cover" alt={player.displayName} />
+                                        ) : (
+                                            player.displayName.charAt(0).toUpperCase()
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Name & Stats */}
                                 <div className="flex-1 min-w-0">
-                                    <div className="truncate font-semibold text-sm">{user.displayName}</div>
-                                    <div className="text-xs text-muted-foreground">Score: {user.score} points</div>
+                                    <h3 className="text-lg font-bold truncate">{player.displayName}</h3>
+                                    <div className="flex items-center gap-3 mt-1">
+                                        <span className="text-sm text-muted-foreground">
+                                            {player.score} victoire{player.score !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
                                 </div>
-                                {division === 1 && (
-                                    <Crown className="h-4 w-4 text-yellow-500 animate-pulse" />
-                                )}
+
+                                {/* Division Badge */}
+                                <div className={`flex-shrink-0 px-4 py-2 rounded-full border font-bold text-sm ${getDivisionColor(player.division)}`}>
+                                    Division {player.division}
+                                </div>
+
+                                {/* ELO Score */}
+                                <div className="flex-shrink-0 text-right">
+                                    <div className="text-2xl font-extrabold text-yellow-500">
+                                        {player.elo}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground font-medium">
+                                        ELO
+                                    </div>
+                                </div>
                             </div>
-                        ))}
+                        </div>
+                    ))
+                ) : (
+                    <div className="rounded-2xl border-2 border-dashed border-border p-20 text-center">
+                        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                            🏆
+                        </div>
+                        <h3 className="text-lg font-bold">Aucun joueur pour le moment</h3>
+                        <p className="text-muted-foreground">Le classement apparaîtra dès les premiers matchs.</p>
                     </div>
                 )}
             </div>
-        </div>
-    );
-};
-
-export default function DivisionsPage() {
-    const [users, setUsers] = useState<UserData[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const res = await fetch('/api/leaderboard');
-                const data = await res.json();
-                if (Array.isArray(data)) {
-                    setUsers(data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch leaderboard", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchUsers();
-    }, []);
-
-    const usersByDivision = {
-        1: users.filter(u => getDivision(u.score) === 1),
-        2: users.filter(u => getDivision(u.score) === 2),
-        3: users.filter(u => getDivision(u.score) === 3),
-        4: users.filter(u => getDivision(u.score) === 4),
-        5: users.filter(u => getDivision(u.score) === 5),
-    };
-
-    if (isLoading) {
-        return (
-            <div className="container mx-auto flex max-w-2xl justify-center py-20">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            </div>
-        );
-    }
-
-    return (
-        <div className="container mx-auto max-w-4xl px-4 py-8">
-            <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Retour au flux
-            </Link>
-
-            <header className="mb-10 text-center">
-                <h1 className="text-4xl font-black tracking-tight mb-2">Classement</h1>
-                <p className="text-muted-foreground">Montez les échelons et dominez le Ranko !</p>
-            </header>
-
-            <DivisionSection
-                division={1}
-                users={usersByDivision[1]}
-                icon={Trophy}
-                color="border-yellow-500"
-                title="Division 1 - Élite"
-            />
-            <DivisionSection
-                division={2}
-                users={usersByDivision[2]}
-                icon={Medal}
-                color="border-slate-400"
-                title="Division 2 - Challenger"
-            />
-            <DivisionSection
-                division={3}
-                users={usersByDivision[3]}
-                icon={Award}
-                color="border-amber-700"
-                title="Division 3 - Vétéran"
-            />
-            <DivisionSection
-                division={4}
-                users={usersByDivision[4]}
-                icon={Shield}
-                color="border-blue-500"
-                title="Division 4 - Confirmé"
-            />
-            <DivisionSection
-                division={5}
-                users={usersByDivision[5]}
-                icon={Shield}
-                color="border-slate-200"
-                title="Division 5 - Rookie"
-            />
         </div>
     );
 }

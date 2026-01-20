@@ -64,6 +64,45 @@ export default function UserSearchInput({ value, onChange, placeholder = "Recher
         return () => clearTimeout(debounce);
     }, [query, excludeIds]);
 
+    // Fetch user by ID if value is present but selectedUser is not set or matches ID
+    useEffect(() => {
+        if (!value) {
+            if (selectedUser) setSelectedUser(null);
+            return;
+        }
+
+        // If we already have the correct user selected, do nothing
+        if (selectedUser && selectedUser.id === value) return;
+
+        // Fetch user details
+        const fetchUser = async () => {
+            try {
+                // Try to find via search API or specialized endpoint. 
+                // Since we don't have a direct 'get user by id' public API easily exposed for specific fields, 
+                // we can abuse the search or stats endpoint, or better:
+                // We'll trust the parent to pass the object if possible, but here we fallback.
+
+                // Let's use the stats endpoint as it returns user details
+                const res = await fetch(`/api/users/${value}/stats`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.displayName) {
+                        setSelectedUser({
+                            id: data.id || value, // Fallback to value if id missing in stats (unlikely)
+                            displayName: data.displayName,
+                            image: data.image || null,
+                            elo: data.elo || 0
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch user details for input:", error);
+            }
+        }
+
+        fetchUser();
+    }, [value, selectedUser]);
+
     const handleSelect = (user: User) => {
         setSelectedUser(user);
         setQuery('');
